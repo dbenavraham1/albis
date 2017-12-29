@@ -158,7 +158,7 @@ w
 #  p # print the in-memory partition table
 #  w # write the partition table
 #EOF
-#} || exit 1
+}
 #}}}
 #SELECT|FORMAT PARTITIONS {{{
 format_partitions(){
