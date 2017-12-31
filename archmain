@@ -240,7 +240,7 @@ configure_systemd_networkd(){
   arch_chroot "echo \"\" >> /etc/systemd/network/60-dhcp.network"
   arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/60-dhcp.network"
   arch_chroot "echo \"UseMTU=true\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/10-dhcp.network"
+  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/60-dhcp.network"
   arch_chroot "systemctl restart systemd-networkd.service"
 # dhcpcd.service configuration
 #  arch_chroot "systemctl start dhcpcd.service"
