@@ -169,7 +169,7 @@ format_partitions(){
   #umount -Rf /dev/sda1
   mkfs.fat -F32 /dev/sda1
   mkdir -p /mnt/boot
-  mount /dev/sda1 /mnt/boot noauto,noatime
+  mount /dev/sda1 /mnt/boot
   swapoff /dev/sda2
   mkswap /dev/sda2
   swapon /dev/sda2
