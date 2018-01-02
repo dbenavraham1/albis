@@ -92,16 +92,10 @@ create_partition(){
   # Note that a blank line (commented as "defualt" will send a empty
   # line terminated with a newline to take the fdisk default.
   # First clear any previous partitions.
-#for v_partition in $(parted -s /dev/sda print|awk '/^ / {print $1}')
-#do
-#   parted -s /dev/sda rm ${v_partition}
-#done
-echo "
-p
-o
-p
-w
-" | fdisk /dev/sda || exit 1
+for v_partition in $(parted -s /dev/sda print|awk '/^ / {print $1}')
+do
+   parted -s /dev/sda rm ${v_partition}
+done
 echo "
 p
 o
