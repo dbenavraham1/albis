@@ -164,14 +164,16 @@ w
 format_partitions(){
   #umount -Rf /dev/sda3
   mkfs.xfs -f /dev/sda3
-  mount /dev/sda3 /mnt
+  mount /dev/sda3 /mnt -o discard,noatime
   #umount -Rf /dev/sda1
   mkfs.fat -F32 /dev/sda1
   mkdir -p /mnt/boot
-  mount /dev/sda1 /mnt/boot
+  mount /dev/sda1 /mnt/boot noauto,noatime
   swapoff /dev/sda2
   mkswap /dev/sda2
   swapon /dev/sda2
+  mkdir -p /mnt/mnt/vmlocal
+  mount /dev/sdd1 /mnt/mnt/vmlocal -o discard,noatime
 }
 #}}}
 #CONFIGURE HOSTNAME {{{
