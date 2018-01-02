@@ -99,6 +99,12 @@ create_partition(){
 echo "
 p
 o
+p
+w
+" | fdisk /dev/sda || exit 1
+echo "
+p
+o
 n
 p
 1
