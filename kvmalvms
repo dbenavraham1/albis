@@ -81,7 +81,7 @@ ISOFILE=$(curl ftp://ftp.osuosl.org/pub/archlinux/iso/latest/ | grep -o -E "arch
 
 curl -O http://ftp.osuosl.org/pub/archlinux/iso/latest/$ISOFILE
 
-IFACE=virsh net-list | head -3 | grep -o -E "passthrough-(\w+)" | uniq
+IFACE=$(virsh net-list | head -3 | grep -o -E "passthrough-(\w+)" | uniq)
 virsh net-autostart `echo $IFACE`
 
 cat <<EOF > config/alcc_setup.xml
