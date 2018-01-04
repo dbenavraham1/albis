@@ -34,14 +34,13 @@ do
             PF_PCI=$( readlink "${NIC_DIR}/$i/device" | cut -d '/' -f4 )
             PF_VENDOR=$( lspci -vmmks $PF_PCI | grep ^Vendor | cut -f2)
             PF_NAME=$( lspci -vmmks $PF_PCI | grep ^Device | cut -f2).
-#            echo "Virtual Functions on $PF_VENDOR $PF_NAME ($i):"
+
             echo "Setup passthrough network for interface: $i"
 
             virsh net-destroy passthrough-`echo $i`
             virsh net-undefine passthrough-`echo $i`
 
-            echo "" >> passthrough-`echo $i`.xml
-cat <<EOF > passthrough-`echo $IP`.xml
+cat <<EOF > passthrough-`echo $i`.xml
 <network>
     <name>passthrough-$i</name>
     <forward mode='hostdev' managed='yes'>
@@ -51,6 +50,8 @@ cat <<EOF > passthrough-`echo $IP`.xml
 EOF
             virsh net-define passthrough-`echo $i`.xml
             virsh net-start passthrough-`echo $i`
+
+#            echo "Virtual Functions on $PF_VENDOR $PF_NAME ($i):"
 #            echo -e "PCI BDF\t\tInterface"
 #            echo -e "=======\t\t========="
 #            for (( l = 0; l < $NUM_VFs; l++ )) ;
