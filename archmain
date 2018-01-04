@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #-------------------------------------------------------------------------------
 #Created by helmuthdu mailto: helmuthdu[at]gmail[dot]com
 #-------------------------------------------------------------------------------
@@ -165,16 +165,16 @@ w
 format_partitions(){
   #umount -Rf /dev/sda3
   mkfs.xfs -f /dev/sda3
-  mount /dev/sda3 /mnt -o discard,noatime
+  mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
   #umount -Rf /dev/sda1
   mkfs.fat -F32 /dev/sda1
-  mkdir -p /mnt/boot
-  mount /dev/sda1 /mnt/boot
+  mkdir -p ${MOUNTPOINT}/boot
+  mount /dev/sda1 ${MOUNTPOINT}/boot
   swapoff /dev/sda2
   mkswap /dev/sda2
   swapon /dev/sda2
-  mkdir -p /mnt/mnt/vmlocal
-  mount /dev/sdd1 /mnt/mnt/vmlocal -o discard,noatime
+  mkdir -p ${MOUNTPOINT}/mnt/vmlocal
+  mount /dev/sdd1 ${MOUNTPOINT}/mnt/vmlocal -o discard,noatime
 }
 #}}}
 #CONFIGURE HOSTNAME {{{
@@ -290,10 +290,10 @@ configure_hostname(){
   log "The hyphen (-) can be used, but a host name cannot start or end with it. Length is restricted to 63 characters."
   host_name="upsidedown"
   echo "$host_name" > ${MOUNTPOINT}/etc/hostname
-#  echo "127.0.0.1          localhost" > ${MOUNTPOINT}/etc/hosts
-#  echo "::1                localhost" > ${MOUNTPOINT}/etc/hosts
-  echo "127.0.0.1          upsidedown" > ${MOUNTPOINT}/etc/hosts
-  echo "::1                upsidedown" > ${MOUNTPOINT}/etc/hosts
+#  echo "127.0.0.1          localhost" >> ${MOUNTPOINT}/etc/hosts
+#  echo "::1                localhost" >> ${MOUNTPOINT}/etc/hosts
+  echo "127.0.0.1          upsidedown" >> ${MOUNTPOINT}/etc/hosts
+  echo "::1                upsidedown" >> ${MOUNTPOINT}/etc/hosts
 #  arch_chroot "sed -i '/127.0.0.1/s/$/          '${host_name}'/' /etc/hosts"
 #  arch_chroot "sed -i '/::1/s/$/                '${host_name}'/' /etc/hosts"
 }
@@ -321,7 +321,8 @@ configure_locale(){
   log "LOCALE - https://wiki.archlinux.org/index.php/Locale"
   log "Locales are used in Linux to define which language the user uses. As the locales define the character sets being used as well, setting up the correct locale is especially important if the language contains non-ASCII characters."
   echo 'LANG=en_US.UTF-8' > ${MOUNTPOINT}/etc/locale.conf
-  arch_chroot "sed -i 's/#LANG=en_US.UTF-8/LANG=en_US.UTF-8/' /etc/locale.gen"
+#  arch_chroot "sed -i 's/#LANG=en_US.UTF-8/LANG=en_US.UTF-8/' /etc/locale.gen"
+  arch_chroot "sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen"
   arch_chroot "locale-gen"
 }
 #}}}
@@ -360,6 +361,7 @@ setup_kvm(){
   #arch_chroot "modprobe -r kvm_intel"
   #arch_chroot "modprobe kvm_intel nested=1"
   arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
+  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
   #arch_chroot "systool -m kvm_intel -v | grep nested"
 }
 #}}}
@@ -367,7 +369,18 @@ setup_kvm(){
 setup_sshd(){
   arch_chroot "systemctl enable sshd.service"
   arch_chroot "systemctl start sshd.service"
-  arch_chroot "systemctl status sshd.service"
+#  arch_chroot "systemctl status sshd.service"
+}
+#}}}
+#SET UP PROFILE {{{
+setup_profile(){
+  echo "EDITOR=/usr/bin/vim" >> /etc/profile
+}
+#}}}
+#SET UP LIBVERTD {{{
+setup_libvirtd(){
+  arch_chroot "systemctl enable libvirtd.service"
+  arch_chroot "systemctl start libvirtd.service"
 }
 #}}}
 #FINISH {{{
@@ -408,5 +421,7 @@ install_bootloader
 root_password
 setup_kvm
 setup_sshd
+setup_profile
+setup_libvirtd
 finish
 #}}}

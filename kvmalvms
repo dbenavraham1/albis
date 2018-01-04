@@ -1,0 +1,88 @@
+#!/bin/bash -x
+
+# Setup network
+virsh net-destroy passthrough-enp8s0f0
+virsh net-undefine passthrough-enp8s0f0
+
+mkdir -p /mnt/vmlocal/kvm/network
+cd /mnt/vmlocal/kvm/network
+
+NIC_DIR="/sys/class/net"
+for i in $( ls $NIC_DIR) ;
+do
+    if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
+        declare -a VF_PCI_BDF
+        declare -a VF_INTERFACE
+        k=0
+        for j in $( ls "${NIC_DIR}/$i/device" ) ;
+        do
+            if [[ "$j" == "virtfn"* ]]; then
+                VF_PCI=$( readlink "${NIC_DIR}/$i/device/$j" | cut -d '/' -f2 )
+                VF_PCI_BDF[$k]=$VF_PCI
+                #get the interface name for the VF at this PCI Address
+                for iface in $( ls $NIC_DIR );
+                do
+                    link_dir=$( readlink ${NIC_DIR}/$iface )
+                    if [[ "$link_dir" == *"$VF_PCI"* ]]; then
+                        VF_INTERFACE[$k]=$iface
+                    fi
+                done
+                ((k++))
+            fi
+        done
+        NUM_VFs=${#VF_PCI_BDF[@]}
+        if [[ $NUM_VFs -gt 0 ]]; then
+            #get the PF Device Description
+            PF_PCI=$( readlink "${NIC_DIR}/$i/device" | cut -d '/' -f4 )
+            PF_VENDOR=$( lspci -vmmks $PF_PCI | grep ^Vendor | cut -f2)
+            PF_NAME=$( lspci -vmmks $PF_PCI | grep ^Device | cut -f2).
+#            echo "Virtual Functions on $PF_VENDOR $PF_NAME ($i):"
+            echo "Setup passthrough network for interface: $i"
+            echo "" >> passthrough-`echo $i`.xml
+cat <<EOF > passthrough-`echo $IP`.xml
+<network>
+    <name>passthrough-$i</name>
+    <forward mode='hostdev' managed='yes'>
+        <pf dev='$i'/>
+    </forward>
+</network>
+EOF
+            virsh net-define passthrough-`echo $i`.xml
+            virsh net-start passthrough-`echo $i`
+#            echo -e "PCI BDF\t\tInterface"
+#            echo -e "=======\t\t========="
+#            for (( l = 0; l < $NUM_VFs; l++ )) ;
+#            do
+#                echo -e "${VF_PCI_BDF[$l]}\t${VF_INTERFACE[$l]}"
+#            done
+            unset VF_PCI_BDF
+            unset VF_INTERFACE
+#            echo " "
+        fi
+    fi
+done
+
+
+
+
+#cd /opt
+#git clone https://github.com/dbenavraham1/albis.git
+#
+#cd /mnt/vmlocal/kvm/guests
+#mkdir -p alcc/config
+#cd alcc
+#cp /opt/albis/alcc_setup.xml config/
+#
+##cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+#curl -O http://mirrors.acm.wpi.edu/archlinux/iso/2018.01.01/archlinux-2018.01.01-x86_64.iso
+##curl -O ftp://ftp.osuosl.org/pub/archlinux/iso/latest/
+#curl -O https://www.archlinux.org/static/netboot/ipxe.28ebfe8a66ac.lkrn
+#
+#mkdir -p /var/lib/tftp
+#pacman -Syu ebtables dnsmasq bridge-utils iptables openbsd-netcat
+#systemctl restart libvirtd.service
+#virsh net-start default
+#
+#qemu-img create -f qcow2 alcc.qcow2 6G
+#
+#chown kvmadmin:kvmadmin -R /mnt/vmlocal
