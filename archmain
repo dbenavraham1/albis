@@ -185,60 +185,32 @@ configure_systemd_networkd(){
   arch_chroot "systemctl start systemd-resolved.service"
   arch_chroot "rm -rf /etc/resolv.conf"
   arch_chroot "ln -s $/run/systemd/resolve/resolv.conf /etc/resolv.conf"
+
 #  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/10-dhcp.network"
 #  arch_chroot "echo \"Name=*\" >> /etc/systemd/network/10-dhcp.network"
 #  arch_chroot "echo \"\" >> /etc/systemd/network/10-dhcp.network"
 #  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/10-dhcp.network"
 #  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"Name=eno1\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/10-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"Name=eno2\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/20-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"Name=enp*s0f0\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/30-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"Name=enp*s0f1\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/40-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"Name=enp*s0f2\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/50-dhcp.network"
-  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"Name=enp*s0f3\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"[DHCP]\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "echo \"RouteMetric=10\" >> /etc/systemd/network/60-dhcp.network"
-  arch_chroot "systemctl restart systemd-networkd.service"
+
+NIC_CNT=10
+NIC_DIR="/sys/class/net"
+for i in $( ls $NIC_DIR) ;
+do
+    if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
+cat <<EOF > ${MOUNTPOINT}/etc/systemd/network/`echo $NIC_CNT`-dhcp.network
+[Match]
+Name=$i
+
+[Network]
+DHCP=ipv4
+
+[DHCP]
+RouteMetric=$NIC_CNT
+EOF
+        NIC_CNT=$(expr $NIC_CNT + 10)
+    fi
+done
+
 # dhcpcd.service configuration
 #  arch_chroot "systemctl start dhcpcd.service"
 ##  arch_chroot "systemctl enable dhcpcd.service"
@@ -356,20 +328,20 @@ root_password(){
   arch_chroot "passwd kvmadmin"
 }
 #}}}
-#SET UP KVM {{{
-setup_kvm(){
-  #arch_chroot "modprobe -r kvm_intel"
-  #arch_chroot "modprobe kvm_intel nested=1"
-  arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
-  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
-  #arch_chroot "systool -m kvm_intel -v | grep nested"
-}
-#}}}
 #SET UP SSHD {{{
 setup_sshd(){
   arch_chroot "systemctl enable sshd.service"
   arch_chroot "systemctl start sshd.service"
 #  arch_chroot "systemctl status sshd.service"
+}
+#}}}
+#SET UP KVM OPTIONS {{{
+setup_kvm_options(){
+  #arch_chroot "modprobe -r kvm_intel"
+  #arch_chroot "modprobe kvm_intel nested=1"
+  arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
+  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
+  #arch_chroot "systool -m kvm_intel -v | grep nested"
 }
 #}}}
 #SET UP PROFILE {{{
@@ -381,6 +353,12 @@ setup_profile(){
 setup_libvirtd(){
   arch_chroot "systemctl enable libvirtd.service"
   arch_chroot "systemctl start libvirtd.service"
+}
+#}}}
+#SET UP KVM IMAGE DEPENDENCIES {{{
+setup_kvm_image_dependencies(){
+  cd  ${MOUNTPOINT}/opt
+  git clone https://github.com/dbenavraham1/albis.git
 }
 #}}}
 #FINISH {{{
@@ -419,9 +397,10 @@ configure_locale
 configure_mkinitcpio
 install_bootloader
 root_password
-setup_kvm
 setup_sshd
+setup_kvm_options
 setup_profile
 setup_libvirtd
+setup_kvm_image_dependencies
 finish
 #}}}

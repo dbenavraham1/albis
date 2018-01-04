@@ -48,6 +48,7 @@ cat <<EOF > passthrough-`echo $i`.xml
     </forward>
 </network>
 EOF
+
             virsh net-define passthrough-`echo $i`.xml
             virsh net-start passthrough-`echo $i`
 
@@ -65,27 +66,86 @@ EOF
     fi
 done
 
+# Setup arch linux ceph cluster
+cd /mnt/vmlocal/kvm/guests
+rm -rf alcc
+mkdir -p alcc/config
+cd alcc
 
+qemu-img create -f qcow2 alcc.qcow2 6G
 
+ISOFILE=$(curl ftp://ftp.osuosl.org/pub/archlinux/iso/latest/ | grep -o -E "archlinux-(.*)-x86_64.iso" | uniq)
 
-#cd /opt
-#git clone https://github.com/dbenavraham1/albis.git
-#
-#cd /mnt/vmlocal/kvm/guests
-#mkdir -p alcc/config
-#cd alcc
-#cp /opt/albis/alcc_setup.xml config/
-#
-##cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
-#curl -O http://mirrors.acm.wpi.edu/archlinux/iso/2018.01.01/archlinux-2018.01.01-x86_64.iso
-##curl -O ftp://ftp.osuosl.org/pub/archlinux/iso/latest/
-#curl -O https://www.archlinux.org/static/netboot/ipxe.28ebfe8a66ac.lkrn
-#
-#mkdir -p /var/lib/tftp
-#pacman -Syu ebtables dnsmasq bridge-utils iptables openbsd-netcat
-#systemctl restart libvirtd.service
-#virsh net-start default
-#
-#qemu-img create -f qcow2 alcc.qcow2 6G
-#
-#chown kvmadmin:kvmadmin -R /mnt/vmlocal
+curl -O http://ftp.osuosl.org/pub/archlinux/iso/latest//$ISOFILE
+
+IFACE=virsh net-list | head -3 | grep -o -E "passthrough-(\w+)" | uniq
+
+cat <<EOF > config/alcc_setup.xml
+<domain type='kvm'>
+  <name>alcc</name>
+  <memory unit='GB'>4</memory>
+  <vcpu placement='static'>4</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
+    <boot dev='cdrom'/>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <cpu mode='host-model'>
+    <model fallback='allow'/>
+    <topology sockets='1' cores='2' threads='2'/>
+  </cpu>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/mnt/vmlocal/kvm/guests/alcc/alcc.qcow2'/>
+      <target dev='hda' bus='virtio'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='/mnt/vmlocal/kvm/guests/alcc/archlinux-2018.01.01-x86_64.iso'/>
+      <target dev='hdc' bus='ide'/>
+      <readonly/>
+    </disk>
+    <controller type='usb' index='0'>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <controller type='ide' index='0'>
+    </controller>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <input type='mouse' bus='ps2'/>
+    <input type='keyboard' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+    <video>
+      <model type='cirrus' vram='9216' heads='1'/>
+    </video>
+    <memballoon model='virtio'>
+    </memballoon>
+  </devices>
+</domain>
+EOF
+
+virsh define config/alcc_setup.xml
+virsh start alcc
+
+exit 1
