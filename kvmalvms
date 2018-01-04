@@ -72,6 +72,9 @@ rm -rf alcc
 mkdir -p alcc/config
 cd alcc
 
+virsh destroy alcc
+virsh undefine alcc
+
 qemu-img create -f qcow2 alcc.qcow2 6G
 
 ISOFILE=$(curl ftp://ftp.osuosl.org/pub/archlinux/iso/latest/ | grep -o -E "archlinux-(.*)-x86_64.iso" | uniq)
@@ -79,6 +82,7 @@ ISOFILE=$(curl ftp://ftp.osuosl.org/pub/archlinux/iso/latest/ | grep -o -E "arch
 curl -O http://ftp.osuosl.org/pub/archlinux/iso/latest/$ISOFILE
 
 IFACE=virsh net-list | head -3 | grep -o -E "passthrough-(\w+)" | uniq
+virsh net-autostart `echo $IFACE`
 
 cat <<EOF > config/alcc_setup.xml
 <domain type='kvm'>
