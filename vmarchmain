@@ -1,0 +1,404 @@
+#!/bin/bash -x
+#-------------------------------------------------------------------------------
+#Created by helmuthdu mailto: helmuthdu[at]gmail[dot]com
+#-------------------------------------------------------------------------------
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#-------------------------------------------------------------------------------
+# Run this script after your first boot with archlinux (as root)
+
+#exec 1> >(logger -s -t $(basename $0)) 2>&1
+
+readonly SCRIPT_NAME=$(basename $0)
+
+log() {
+    echo "$@" >> ./log.log 2>&1
+    logger -p user.notice -t $SCRIPT_NAME "$@"
+}
+
+err() {
+    echo "$@" >&2 >> ./err.log 2>&1
+    logger -p user.error -t $SCRIPT_NAME "$@"
+}
+
+if [[ -f `pwd`/sharedfuncs ]]; then
+  source sharedfuncs
+else
+  log "missing file: sharedfuncs"
+  exit 1
+fi
+
+#ARCHLINUX INSTALL SCRIPTS MODE {{{
+#SELECT KEYMAP {{{
+select_keymap(){
+  loadkeys "us";
+}
+#}}}
+#MIRRORLIST {{{
+configure_mirrorlist(){
+  url="https://www.archlinux.org/mirrorlist/?country=US&use_mirror_status=on"
+
+  tmpfile=$(mktemp --suffix=-mirrorlist)
+
+  # Get latest mirror list and save to tmpfile
+  curl -so ${tmpfile} ${url}
+  sed -i 's/^#Server/Server/g' ${tmpfile}
+
+  # Backup and replace current mirrorlist file (if new file is non-zero)
+  if [[ -s ${tmpfile} ]]; then
+   { log " Backing up the original mirrorlist..."
+     mv -i /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig; } &&
+   { log " Rotating the new list into place..."
+     mv -i ${tmpfile} /etc/pacman.d/mirrorlist; }
+  else
+    err " Unable to update, could not download list."
+  fi
+  # better repo should go first
+  cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.tmp
+  rankmirrors /etc/pacman.d/mirrorlist.tmp > /etc/pacman.d/mirrorlist
+  rm -rf /etc/pacman.d/mirrorlist.tmp
+  # allow global read access (required for non-root yaourt execution)
+  chmod +r /etc/pacman.d/mirrorlist
+  #vim /etc/pacman.d/mirrorlist
+}
+#}}}
+#UMOUNT PARTITIONS {{{
+umount_partitions(){
+  #umount -Rf /mnt/boot
+  #umount -Rf /mnt
+  mounted_partitions=(`lsblk | grep ${MOUNTPOINT} | awk '{print $7}' | sort -r`)
+  swapoff -a
+  for i in ${mounted_partitions[@]}; do
+    umount -Rf $i
+  done
+}
+#}}}
+#SETUP PARTITION{{{
+create_partition(){
+  # to create the partitions programatically (rather than manually)
+  # we're going to simulate the manual input to fdisk
+  # The sed script strips off all the comments so that we can
+  # document what we're doing in-line with the actual commands
+  # Note that a blank line (commented as "defualt" will send a empty
+  # line terminated with a newline to take the fdisk default.
+  # First clear any previous partitions.
+#for v_partition in $(parted -s /dev/vda print|awk '/^ / {print $1}')
+#do
+#   parted -s /dev/vda rm ${v_partition}
+#done
+#wipefs --all --force /dev/vda
+echo "
+p
+o
+n
+p
+1
+
++512M
+t
+ef
+n
+p
+2
+
++1G
+t
+2
+82
+n
+p
+3
+
++30G
+t
+3
+83
+a
+1
+p
+w
+" | fdisk /dev/vda || exit 1
+#sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk /dev/vda
+#  p # print existing partitions
+#  o # clear the in memory partition table
+#  n # new partition
+#  p # primary partition
+#  1 # partition number 1
+#    # default - start at beginning of disk
+#  +512M # 512 MB boot parttion
+#  t # Change partition type to hex ef
+#  ef # EFI (FAT-12/16/32)
+#  n # new partition
+#  p # primary partition
+#  2 # partition number 2
+#    # default - start at beginning of disk
+#  +1G # 1 G boot parttion
+#  t # Change partition type to hex ef
+#  2 # Selected partition
+#  82 # EFI (FAT-12/16/32)
+#  n # new partition
+#  p # primary partition
+#  3 # partition number 3
+#    # default - start at beginning of disk
+#  +30G # 30 G boot parttion
+#  t # Change partition type to hex ef
+#  3 # Selected partition
+#  83 # EFI (FAT-12/16/32)
+#  a # make a partition bootable
+#  1 # bootable partition is partition 1 -- /dev/vda1
+#  p # print the in-memory partition table
+#  w # write the partition table
+#EOF
+}
+#}}}
+#SELECT|FORMAT PARTITIONS {{{
+format_partitions(){
+  #umount -Rf /dev/vda3
+  mkfs.xfs -f /dev/vda3
+  mount /dev/vda3 ${MOUNTPOINT} -o discard,noatime
+  #umount -Rf /dev/vda1
+  mkfs.fat -F32 /dev/vda1
+  mkdir -p ${MOUNTPOINT}/boot
+  mount /dev/vda1 ${MOUNTPOINT}/boot
+  swapoff /dev/vda2
+  mkswap /dev/vda2
+  swapon /dev/vda2
+}
+#}}}
+#CONFIGURE HOSTNAME {{{
+configure_systemd_networkd(){
+# systemd-networkd.service configuration
+  arch_chroot "systemctl enable systemd-networkd.service"
+  arch_chroot "systemctl enable systemd-resolved.service"
+  arch_chroot "systemctl start systemd-resolved.service"
+  arch_chroot "rm -rf /etc/resolv.conf"
+  arch_chroot "ln -s $/run/systemd/resolve/resolv.conf /etc/resolv.conf"
+
+#  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/10-dhcp.network"
+#  arch_chroot "echo \"Name=*\" >> /etc/systemd/network/10-dhcp.network"
+#  arch_chroot "echo \"\" >> /etc/systemd/network/10-dhcp.network"
+#  arch_chroot "echo \"[Network]\" >> /etc/systemd/network/10-dhcp.network"
+#  arch_chroot "echo \"DHCP=ipv4\" >> /etc/systemd/network/10-dhcp.network"
+
+NIC_CNT=10
+NIC_DIR="/sys/class/net"
+for i in $( ls $NIC_DIR) ;
+do
+    if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
+cat <<EOF > ${MOUNTPOINT}/etc/systemd/network/`echo $NIC_CNT`-dhcp.network
+[Match]
+Name=$i
+
+[Network]
+DHCP=ipv4
+
+[DHCP]
+RouteMetric=$NIC_CNT
+EOF
+        NIC_CNT=$(expr $NIC_CNT + 10)
+    fi
+done
+
+# dhcpcd.service configuration
+#  arch_chroot "systemctl start dhcpcd.service"
+##  arch_chroot "systemctl enable dhcpcd.service"
+#  arch_chroot "systemctl enable dhcpcd@eno1.service"
+#  arch_chroot "systemctl enable dhcpcd@eno2.service"
+#  arch_chroot "systemctl enable dhcpcd@enp2s0f0.service"
+#  arch_chroot "systemctl enable dhcpcd@enp2s0f1.service"
+#  arch_chroot "systemctl enable dhcpcd@enp2s0f2.service"
+#  arch_chroot "systemctl enable dhcpcd@enp2s0f3.service"
+}
+#}}}
+#INSTALL BASE SYSTEM {{{
+install_base_system(){
+  log "INSTALL BASE SYSTEM"
+  log "Installing PGP keyring"
+  pacman -Sy archlinux-keyring
+  log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
+  rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
+  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt
+  [[ $? -ne 0 ]] && err "Installing base system to ${MOUNTPOINT} failed. Check error messages above."
+  local PTABLE=`parted -l | grep "gpt"`
+  [[ -n $PTABLE ]] && pacstrap ${MOUNTPOINT} gptfdisk
+  configure_systemd_networkd
+  if is_package_installed "espeakup"; then
+    pacstrap ${MOUNTPOINT} alsa-utils espeakup brltty
+    arch_chroot "systemctl enable espeakup.service"
+  fi
+}
+#}}}
+#CONFIGURE KEYMAP {{{
+configure_keymap(){
+  #ADD KEYMAP TO THE NEW SETUP
+  echo "KEYMAP=$KEYMAP" > ${MOUNTPOINT}/etc/vconsole.conf
+}
+#}}}
+#CONFIGURE FSTAB {{{
+configure_fstab(){
+  log "FSTAB - https://wiki.archlinux.org/index.php/Fstab"
+  log "The /etc/fstab file contains static filesystem information. It defines how storage devices and partitions are to be mounted and integrated into the overall system. It is read by the mount command to determine which options to use when mounting a specific partition or partition."
+  genfstab -p ${MOUNTPOINT} >> ${MOUNTPOINT}/etc/fstab
+  [[ -f ${MOUNTPOINT}/swapfile ]] && sed -i "s/\\${MOUNTPOINT}//" ${MOUNTPOINT}/etc/fstab
+  #vim ${MOUNTPOINT}/etc/fstab
+}
+#}}}
+#CONFIGURE HOSTNAME {{{
+configure_hostname(){
+  log "HOSTNAME - https://wiki.archlinux.org/index.php/HOSTNAME"
+  log "A host name is a unique name created to identify a machine on a network.Host names are restricted to alphanumeric characters."
+  log "The hyphen (-) can be used, but a host name cannot start or end with it. Length is restricted to 63 characters."
+  host_name="upsidedownvm1"
+  echo "$host_name" > ${MOUNTPOINT}/etc/hostname
+#  echo "127.0.0.1          localhost" >> ${MOUNTPOINT}/etc/hosts
+#  echo "::1                localhost" >> ${MOUNTPOINT}/etc/hosts
+  echo "127.0.0.1          upsidedown" >> ${MOUNTPOINT}/etc/hosts
+  echo "::1                upsidedown" >> ${MOUNTPOINT}/etc/hosts
+#  arch_chroot "sed -i '/127.0.0.1/s/$/          '${host_name}'/' /etc/hosts"
+#  arch_chroot "sed -i '/::1/s/$/                '${host_name}'/' /etc/hosts"
+}
+#}}}
+#CONFIGURE TIMEZONE {{{
+configure_timezone(){
+  log "TIMEZONE - https://wiki.archlinux.org/index.php/Timezone"
+  log "In an operating system the time (clock) is determined by four parts: Time value, Time standard, Time Zone, and DST (Daylight Saving Time if applicable)."
+  arch_chroot "ln -sf /usr/share/zoneinfo/America/Denver /etc/localtime"
+  arch_chroot "sed -i '/#NTP=/d' /etc/systemd/timesyncd.conf"
+  arch_chroot "sed -i 's/#Fallback//' /etc/systemd/timesyncd.conf"
+  arch_chroot "echo \"FallbackNTP=0.pool.ntp.org 1.pool.ntp.org 0.fr.pool.ntp.org\" >> /etc/systemd/timesyncd.conf"
+  arch_chroot "systemctl enable systemd-timesyncd.service"
+}
+#}}}
+#CONFIGURE HARDWARECLOCK {{{
+configure_hardwareclock(){
+  log "HARDWARE CLOCK TIME - https://wiki.archlinux.org/index.php/Internationalization"
+  log "This is set in /etc/adjtime. Set the hardware clock mode uniformly between your operating systems on the same machine. Otherwise, they will overwrite the time and cause clock shifts (which can cause time drift correction to be miscalibrated)."
+  arch_chroot "hwclock --systohc --localtime";
+}
+#}}}
+#CONFIGURE LOCALE {{{
+configure_locale(){
+  log "LOCALE - https://wiki.archlinux.org/index.php/Locale"
+  log "Locales are used in Linux to define which language the user uses. As the locales define the character sets being used as well, setting up the correct locale is especially important if the language contains non-ASCII characters."
+  echo 'LANG=en_US.UTF-8' > ${MOUNTPOINT}/etc/locale.conf
+#  arch_chroot "sed -i 's/#LANG=en_US.UTF-8/LANG=en_US.UTF-8/' /etc/locale.gen"
+  arch_chroot "sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen"
+  arch_chroot "locale-gen"
+}
+#}}}
+#CONFIGURE MKINITCPIO {{{
+configure_mkinitcpio(){
+  log "MKINITCPIO - https://wiki.archlinux.org/index.php/Mkinitcpio"
+  log "mkinitcpio is a Bash script used to create an initial ramdisk environment."
+  arch_chroot "mkinitcpio -p linux"
+}
+#}}}
+#INSTALL BOOTLOADER {{{
+install_bootloader(){
+  log "BOOTLOADER - https://wiki.archlinux.org/index.php/Bootloader"
+  log "The boot loader is responsible for loading the kernel and initial RAM disk before initiating the boot process."
+  log "ROOT Partition: ${ROOT_MOUNTPOINT}"
+  if [[ $UEFI -eq 1 ]]; then
+    log "UEFI Mode Detected"
+  fi
+  [[ $UEFI -eq 1 ]] && pacstrap ${MOUNTPOINT} efibootmgr dosfstools
+  [[ $UEFI -eq 1 ]] && efibootmgr -b 1 -B
+  [[ $UEFI -eq 1 ]] && efibootmgr -d /dev/vda -p 1 -c -L "ArchMain" -l \vmlinuz-linux -u "root=/dev/vda3 rw initrd=/initramfs-linux.img intel_iommu=on"
+}
+#}}}
+#ROOT PASSWORD {{{
+root_password(){
+  log "ROOT PASSWORD"
+  log "Enter your new root password"
+  arch_chroot "passwd"
+  log "Enter your new kvmadmin password"
+  arch_chroot "useradd -m -G wheel -s /bin/bash kvmadmin"
+  arch_chroot "passwd kvmadmin"
+}
+#}}}
+#SET UP SSHD {{{
+setup_sshd(){
+  arch_chroot "systemctl enable sshd.service"
+  arch_chroot "systemctl start sshd.service"
+#  arch_chroot "systemctl status sshd.service"
+}
+#}}}
+##SET UP KVM OPTIONS {{{
+#setup_kvm_options(){
+#  #arch_chroot "modprobe -r kvm_intel"
+#  #arch_chroot "modprobe kvm_intel nested=1"
+#  arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
+#  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
+#  #arch_chroot "systool -m kvm_intel -v | grep nested"
+#}
+##}}}
+##SET UP PROFILE {{{
+#setup_profile(){
+#  echo "EDITOR=/usr/bin/vim" >> /etc/profile
+#}
+##}}}
+##SET UP LIBVERTD {{{
+#setup_libvirtd(){
+#  arch_chroot "systemctl enable libvirtd.service"
+#  arch_chroot "systemctl start libvirtd.service"
+#}
+##}}}
+##SET UP KVM IMAGE DEPENDENCIES {{{
+#setup_kvm_image_dependencies(){
+#  cd  ${MOUNTPOINT}/opt
+#  git clone https://github.com/dbenavraham1/albis.git
+#}
+##}}}
+#FINISH {{{
+finish(){
+  log "INSTALL COMPLETED"
+  #COPY AUI TO ROOT FOLDER IN THE NEW SYSTEM
+  log "A copy of the AUI will be placed in /root directory of your new system"
+  cp -R `pwd` ${MOUNTPOINT}/root
+  read_input_text "Reboot system"
+  if [[ $OPTION == y ]]; then
+    umount_partitions
+    reboot
+  fi
+  exit 0
+}
+#}}}
+
+print_title "https://wiki.archlinux.org/index.php/Arch_Install_Scripts"
+print_info "The Arch Install Scripts are a set of Bash scripts that simplify Arch installation."
+check_boot_system
+check_connection
+check_trim
+select_keymap
+configure_mirrorlist
+umount_partitions
+create_partition
+umount_partitions
+format_partitions
+install_base_system
+configure_keymap
+configure_fstab
+configure_hostname
+configure_timezone
+configure_hardwareclock
+configure_locale
+configure_mkinitcpio
+#install_bootloader
+root_password
+setup_sshd
+#setup_kvm_options
+#setup_profile
+#setup_libvirtd
+#setup_kvm_image_dependencies
+finish
+#}}}
