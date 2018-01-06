@@ -75,7 +75,7 @@ cd alcc
 virsh destroy alcc
 virsh undefine alcc
 
-qemu-img create -f qcow2 alcc.qcow2 6G
+qemu-img create -f qcow2 alcc.qcow2 32G
 
 ISOFILE=$(curl ftp://ftp.osuosl.org/pub/archlinux/iso/latest/ | grep -o -E "archlinux-(.*)-x86_64.iso" | uniq)
 

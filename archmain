@@ -119,7 +119,7 @@ n
 p
 3
 
-+20G
++35G
 t
 3
 83
@@ -150,7 +150,7 @@ w
 #  p # primary partition
 #  3 # partition number 3
 #    # default - start at beginning of disk
-#  +20G # 20 G boot parttion
+#  +35G # 35 G boot parttion
 #  t # Change partition type to hex ef
 #  3 # Selected partition
 #  83 # EFI (FAT-12/16/32)
