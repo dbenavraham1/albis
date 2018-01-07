@@ -393,7 +393,7 @@ configure_timezone
 configure_hardwareclock
 configure_locale
 configure_mkinitcpio
-#install_bootloader
+install_bootloader
 root_password
 setup_sshd
 #setup_kvm_options
