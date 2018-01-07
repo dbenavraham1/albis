@@ -312,8 +312,8 @@ install_bootloader(){
     log "UEFI Mode Detected"
   fi
   [[ $UEFI -eq 1 ]] && pacstrap ${MOUNTPOINT} efibootmgr dosfstools
-  [[ $UEFI -eq 1 ]] && efibootmgr -b 1 -B
-  [[ $UEFI -eq 1 ]] && efibootmgr -d /dev/vda -p 1 -c -L "ArchMain" -l \vmlinuz-linux -u "root=/dev/vda3 rw initrd=/initramfs-linux.img intel_iommu=on"
+  [[ $UEFI -eq 1 ]] && efibootmgr -b 0 -B
+  [[ $UEFI -eq 1 ]] && efibootmgr -d /dev/vda -p 1 -c -L "VmArchMain" -l \vmlinuz-linux -u "root=/dev/vda3 rw initrd=/initramfs-linux.img"
 }
 #}}}
 #ROOT PASSWORD {{{
@@ -378,7 +378,7 @@ print_title "https://wiki.archlinux.org/index.php/Arch_Install_Scripts"
 print_info "The Arch Install Scripts are a set of Bash scripts that simplify Arch installation."
 check_boot_system
 check_connection
-check_trim
+check_trim "/dev/vda"
 select_keymap
 configure_mirrorlist
 umount_partitions

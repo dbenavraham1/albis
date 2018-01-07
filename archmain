@@ -229,7 +229,7 @@ install_base_system(){
   pacman -Sy archlinux-keyring
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
-  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt
+  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf
   [[ $? -ne 0 ]] && err "Installing base system to ${MOUNTPOINT} failed. Check error messages above."
   local PTABLE=`parted -l | grep "gpt"`
   [[ -n $PTABLE ]] && pacstrap ${MOUNTPOINT} gptfdisk
@@ -342,6 +342,11 @@ setup_kvm_options(){
   arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
   arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
   #arch_chroot "systool -m kvm_intel -v | grep nested"
+arch_chroot 'cat <<EOF >> /etc/libvirt/qemu.conf
+nvram = [
+    "/usr/share/ovmf/ovmf_code_x64.bin:/usr/share/ovmf/ovmf_vars_x64.bin"
+]
+EOF'
 }
 #}}}
 #SET UP PROFILE {{{
@@ -380,7 +385,7 @@ print_title "https://wiki.archlinux.org/index.php/Arch_Install_Scripts"
 print_info "The Arch Install Scripts are a set of Bash scripts that simplify Arch installation."
 check_boot_system
 check_connection
-check_trim
+check_trim "/dev/sda"
 select_keymap
 configure_mirrorlist
 umount_partitions

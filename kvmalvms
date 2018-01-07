@@ -73,7 +73,7 @@ mkdir -p alcc/config
 cd alcc
 
 virsh destroy alcc
-virsh undefine alcc
+virsh undefine --nvram alcc
 
 qemu-img create -f qcow2 alcc.qcow2 32G
 
@@ -91,8 +91,11 @@ cat <<EOF > config/alcc_setup.xml
   <vcpu placement='static'>4</vcpu>
   <os>
     <type arch='x86_64' machine='pc-i440fx-2.1'>hvm</type>
-    <boot dev='cdrom'/>
-    <boot dev='hd'/>
+    <loader readonly='yes' type='pflash'>/usr/share/ovmf/ovmf_code_x64.bin</loader>
+    <nvram template='/usr/share/ovmf/ovmf_vars_x64.bin' />
+    <boot dev='hd' />
+    <boot dev='cdrom' />
+    <bootmenu enable='yes' timeout='3000' />
   </os>
   <features>
     <acpi/>
