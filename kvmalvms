@@ -148,6 +148,25 @@ cat <<EOF > config/alcc_setup.xml
     </video>
     <memballoon model='virtio'>
     </memballoon>
+EOF
+
+DEV_DISK_DIR="/dev/disk/by-id"
+for i in $( ls $DEV_DISK_DIR);
+do
+    if [[ $i =~ ST3000DM|Hitachi_HDS5C ]]; then
+        echo "Setup block device for: $i"
+DEV_DISK_POSTFIX=$(ls -la ${DEV_DISK_DIR}/$i | awk -F"${DEV_DISK_DIR}/$i -> ../../" '{print $2}')
+cat <<EOF >> config/alcc_setup.xml
+    <disk type="block" device="disk">
+      <driver name="qemu" type="raw" />
+      <source dev="${DEV_DISK_DIR}/$i" />
+      <target dev="$DEV_DISK_POSTFIX" bus="virtio" />
+    </disk>
+EOF
+    fi
+done
+
+cat <<EOF >> config/alcc_setup.xml
   </devices>
 </domain>
 EOF
