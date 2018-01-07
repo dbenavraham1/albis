@@ -354,7 +354,7 @@ setup_profile(){
   echo "EDITOR=/usr/bin/vim" >> /etc/profile
 }
 #}}}
-#SET UP LIBVERTD {{{
+#SET UP LIBVIRTD {{{
 setup_libvirtd(){
   arch_chroot "systemctl enable libvirtd.service"
   arch_chroot "systemctl start libvirtd.service"
