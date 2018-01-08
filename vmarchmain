@@ -227,7 +227,7 @@ install_base_system(){
   pacman -Sy archlinux-keyring
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
-  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ceph
+  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt docker ceph
   [[ $? -ne 0 ]] && err "Installing base system to ${MOUNTPOINT} failed. Check error messages above."
   local PTABLE=`parted -l | grep "gpt"`
   [[ -n $PTABLE ]] && pacstrap ${MOUNTPOINT} gptfdisk
@@ -333,6 +333,12 @@ setup_sshd(){
 #  arch_chroot "systemctl status sshd.service"
 }
 #}}}
+#SET UP DOCKER {{{
+setup_docker(){
+  arch_chroot "systemctl start docker.service"
+  arch_chroot "systemctl enable docker.service"
+}
+#}}}
 ##SET UP KVM OPTIONS {{{
 #setup_kvm_options(){
 #  #arch_chroot "modprobe -r kvm_intel"
@@ -396,6 +402,7 @@ configure_mkinitcpio
 install_bootloader
 root_password
 setup_sshd
+setup_docker
 #setup_kvm_options
 #setup_profile
 #setup_libvirtd

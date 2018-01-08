@@ -132,6 +132,26 @@ cat <<EOF > config/alcc_setup.xml
       <source network='$IFACE'/>
       <model type='rtl8139'/>
     </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
     <serial type='pty'>
       <target port='0'/>
     </serial>
