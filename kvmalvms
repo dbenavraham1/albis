@@ -119,7 +119,7 @@ cat <<EOF > config/alcc_setup.xml
     </disk>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='/mnt/vmlocal/kvm/guests/alcc/archlinux-2018.01.01-x86_64.iso'/>
+      <source file='/mnt/vmlocal/kvm/guests/alcc/$ISOFILE'/>
       <target dev='hdc' bus='ide'/>
       <readonly/>
     </disk>
