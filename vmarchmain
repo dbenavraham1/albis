@@ -368,8 +368,8 @@ setup_docker(){
 #FINISH {{{
 finish(){
   log "INSTALL COMPLETED"
-  #COPY AUI TO ROOT FOLDER IN THE NEW SYSTEM
-  log "A copy of the AUI will be placed in /root directory of your new system"
+  #COPY ALBIS TO ROOT FOLDER IN THE NEW SYSTEM
+  log "A copy of the ALBIS will be placed in /root directory of your new system"
   cp -R `pwd` ${MOUNTPOINT}/root
   read_input_text "Reboot system"
   if [[ $OPTION == y ]]; then

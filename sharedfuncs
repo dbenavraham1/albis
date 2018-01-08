@@ -72,12 +72,12 @@
   LUKS_DISK="sda2"
   AUR=`echo -e "(${BPurple}aur${Reset})"`
   EXTERNAL=`echo -e "(${BYellow}external${Reset})"`
-  AUI_DIR=`pwd` #CURRENT DIRECTORY
+  ALBIS_DIR=`pwd` #CURRENT DIRECTORY
   [[ $1 == -v || $1 == --verbose ]] && VERBOSE_MODE=1 || VERBOSE_MODE=0 # VERBOSE MODE
-  LOG="${AUI_DIR}/`basename ${0}`.log" # LOG FILE
+  LOG="${ALBIS_DIR}/`basename ${0}`.log" # LOG FILE
   [[ -f $LOG ]] && rm -f $LOG
   PKG=""
-  PKG_FAIL="${AUI_DIR}/`basename ${0}`_fail_install.log"
+  PKG_FAIL="${ALBIS_DIR}/`basename ${0}`_fail_install.log"
   [[ -f $PKG_FAIL ]] && rm -f $PKG_FAIL
   XPINGS=0 # CONNECTION CHECK
   SPIN="/-\|" #SPINNER POSITION
@@ -457,12 +457,12 @@
     #check if [X] or [ ]
     is_package_installed "$1" && checkbox 1 || checkbox 0
   } #}}}
-  aui_download_packages() { #{{{
+  albis_download_packages() { #{{{
     for PKG in $1; do
       #exec command as user instead of root
       su - ${username} -c "
-        [[ ! -d aui_packages ]] && mkdir aui_packages
-        cd aui_packages
+        [[ ! -d albis_packages ]] && mkdir albis_packages
+        cd albis_packages
         curl -o ${PKG}.tar.gz https://aur.archlinux.org/cgit/aur.git/snapshot/${PKG}.tar.gz
         tar zxvf ${PKG}.tar.gz
         rm ${PKG}.tar.gz
