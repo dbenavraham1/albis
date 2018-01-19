@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Setup arch linux ceph cluster
 cd /mnt/vmlocal/kvm/guests

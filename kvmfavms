@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Setup network
 mkdir -p /mnt/vmlocal/kvm/network

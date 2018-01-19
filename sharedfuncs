@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #-------------------------------------------------------------------------------
 #Created by helmuthdu mailto: helmuthdu[at]gmail[dot]com
 #Contribution: flexiondotorg
