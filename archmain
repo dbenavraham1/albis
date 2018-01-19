@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #-------------------------------------------------------------------------------
 #Created by helmuthdu mailto: helmuthdu[at]gmail[dot]com
 #-------------------------------------------------------------------------------
@@ -264,8 +264,8 @@ configure_hostname(){
   echo "$host_name" > ${MOUNTPOINT}/etc/hostname
 #  echo "127.0.0.1          localhost" >> ${MOUNTPOINT}/etc/hosts
 #  echo "::1                localhost" >> ${MOUNTPOINT}/etc/hosts
-  echo "127.0.0.1          upsidedown" >> ${MOUNTPOINT}/etc/hosts
-  echo "::1                upsidedown" >> ${MOUNTPOINT}/etc/hosts
+  echo "127.0.0.1          $host_name" >> ${MOUNTPOINT}/etc/hosts
+  echo "::1                $host_name" >> ${MOUNTPOINT}/etc/hosts
 #  arch_chroot "sed -i '/127.0.0.1/s/$/          '${host_name}'/' /etc/hosts"
 #  arch_chroot "sed -i '/::1/s/$/                '${host_name}'/' /etc/hosts"
 }

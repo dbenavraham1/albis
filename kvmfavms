@@ -1,5 +1,71 @@
 #!/bin/bash
 
+# Setup network
+mkdir -p /mnt/vmlocal/kvm/network
+cd /mnt/vmlocal/kvm/network
+rm -rf *
+
+NIC_DIR="/sys/class/net"
+for i in $( ls $NIC_DIR) ;
+do
+    if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
+        declare -a VF_PCI_BDF
+        declare -a VF_INTERFACE
+        k=0
+        for j in $( ls "${NIC_DIR}/$i/device" ) ;
+        do
+            if [[ "$j" == "virtfn"* ]]; then
+                VF_PCI=$( readlink "${NIC_DIR}/$i/device/$j" | cut -d '/' -f2 )
+                VF_PCI_BDF[$k]=$VF_PCI
+                #get the interface name for the VF at this PCI Address
+                for iface in $( ls $NIC_DIR );
+                do
+                    link_dir=$( readlink ${NIC_DIR}/$iface )
+                    if [[ "$link_dir" == *"$VF_PCI"* ]]; then
+                        VF_INTERFACE[$k]=$iface
+                    fi
+                done
+                ((k++))
+            fi
+        done
+        NUM_VFs=${#VF_PCI_BDF[@]}
+        if [[ $NUM_VFs -gt 0 ]]; then
+            #get the PF Device Description
+            PF_PCI=$( readlink "${NIC_DIR}/$i/device" | cut -d '/' -f4 )
+            PF_VENDOR=$( lspci -vmmks $PF_PCI | grep ^Vendor | cut -f2)
+            PF_NAME=$( lspci -vmmks $PF_PCI | grep ^Device | cut -f2).
+
+            echo "Setup passthrough network for interface: $i"
+
+            virsh net-destroy passthrough-`echo $i`
+            virsh net-undefine passthrough-`echo $i`
+
+cat <<EOF > passthrough-`echo $i`.xml
+<network>
+    <name>passthrough-$i</name>
+    <forward mode='hostdev' managed='yes'>
+        <pf dev='$i'/>
+    </forward>
+</network>
+EOF
+
+            virsh net-define passthrough-`echo $i`.xml
+            virsh net-start passthrough-`echo $i`
+
+#            echo "Virtual Functions on $PF_VENDOR $PF_NAME ($i):"
+#            echo -e "PCI BDF\t\tInterface"
+#            echo -e "=======\t\t========="
+#            for (( l = 0; l < $NUM_VFs; l++ )) ;
+#            do
+#                echo -e "${VF_PCI_BDF[$l]}\t${VF_INTERFACE[$l]}"
+#            done
+            unset VF_PCI_BDF
+            unset VF_INTERFACE
+#            echo " "
+        fi
+    fi
+done
+
 # Setup arch linux ceph cluster
 cd /mnt/vmlocal/kvm/guests
 rm -rf alcc
@@ -62,6 +128,30 @@ cat <<EOF > config/alcc_setup.xml
     <controller type='pci' index='0' model='pci-root'/>
     <controller type='ide' index='0'>
     </controller>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
+    <interface type='network'>
+      <source network='$IFACE'/>
+      <model type='rtl8139'/>
+    </interface>
     <serial type='pty'>
       <target port='0'/>
     </serial>
@@ -86,74 +176,6 @@ cat <<EOF > config/alcc_setup.xml
     </memballoon>
 EOF
 
-# Setup network
-declare -A PF_PCI_BDF
-pfi=0
-NIC_DIR="/sys/class/net"
-for i in $( ls $NIC_DIR) ;
-do
-    if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
-        declare -a VF_PCI_BDF
-        declare -a VF_INTERFACE
-        k=0
-        for j in $( ls "${NIC_DIR}/$i/device" ) ;
-        do
-            if [[ "$j" == "virtfn"* ]]; then
-                VF_PCI=$( readlink "${NIC_DIR}/$i/device/$j" | cut -d '/' -f2 )
-                VF_PCI_BDF[$k]=$VF_PCI
-                #get the interface name for the VF at this PCI Address
-                for iface in $( ls $NIC_DIR );
-                do
-                    link_dir=$( readlink ${NIC_DIR}/$iface )
-                    if [[ "$link_dir" == *"$VF_PCI"* ]]; then
-                        VF_INTERFACE[$k]=$iface
-                    fi
-                done
-                ((k++))
-            fi
-        done
-        NUM_VFs=${#VF_PCI_BDF[@]}
-        if [[ $NUM_VFs -gt 0 ]]; then
-            #get the PF Device Description
-            PF_PCI=$( readlink "${NIC_DIR}/$i/device" | cut -d '/' -f4 )
-            PF_VENDOR=$( lspci -vmmks $PF_PCI | grep ^Vendor | cut -f2)
-            PF_NAME=$( lspci -vmmks $PF_PCI | grep ^Device | cut -f2).
-
-            echo "Setup passthrough network for interface: $i"
-            PF_PCI_BDF[$pfi]=$PF_PCI
-
-            echo "Virtual Functions on $PF_VENDOR $PF_NAME $PF_PCI ($i):"
-            echo -e "PCI BDF\t\tInterface"
-            echo -e "=======\t\t========="
-            for (( l = 0; l < $NUM_VFs; l++ )) ;
-            do
-                echo -e "${VF_PCI_BDF[$l]}\t${VF_INTERFACE[$l]}"
-            done
-            unset VF_PCI_BDF
-            unset VF_INTERFACE
-            echo " "
-	    ((pfi++))
-        fi
-    fi
-done
-
-NUM_PFs=${#PF_PCI_BDF[@]}
-if [[ $NUM_PFs -gt 0 ]]; then
-    PFDEVICE=0
-    DOMAIN=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[1]}')
-    BUS=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[2]}')
-    SLOT=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[3]}')
-    FUNCTION=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[4]}')
-cat <<EOF >> config/alcc_setup.xml
-    <hostdev mode='subsystem' type='pci' managed='yes'>
-      <source>
-	    <address type='pci' domain='0x$DOMAIN' bus='0x$BUS' slot='0x$SLOT' function='0x$FUNCTION'/>
-      </source>
-    </hostdev>
-EOF
-fi
-
-# Setup disks
 DEV_DISK_DIR="/dev/disk/by-id"
 for i in $( ls $DEV_DISK_DIR);
 do

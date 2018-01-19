@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #-------------------------------------------------------------------------------
 #Created by helmuthdu mailto: helmuthdu[at]gmail[dot]com
 #-------------------------------------------------------------------------------
@@ -227,7 +227,7 @@ install_base_system(){
   pacman -Sy archlinux-keyring
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
-  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt docker ceph
+  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf
   [[ $? -ne 0 ]] && err "Installing base system to ${MOUNTPOINT} failed. Check error messages above."
   local PTABLE=`parted -l | grep "gpt"`
   [[ -n $PTABLE ]] && pacstrap ${MOUNTPOINT} gptfdisk
@@ -262,8 +262,8 @@ configure_hostname(){
   echo "$host_name" > ${MOUNTPOINT}/etc/hostname
 #  echo "127.0.0.1          localhost" >> ${MOUNTPOINT}/etc/hosts
 #  echo "::1                localhost" >> ${MOUNTPOINT}/etc/hosts
-  echo "127.0.0.1          upsidedown" >> ${MOUNTPOINT}/etc/hosts
-  echo "::1                upsidedown" >> ${MOUNTPOINT}/etc/hosts
+  echo "127.0.0.1          $host_name" >> ${MOUNTPOINT}/etc/hosts
+  echo "::1                $host_name" >> ${MOUNTPOINT}/etc/hosts
 #  arch_chroot "sed -i '/127.0.0.1/s/$/          '${host_name}'/' /etc/hosts"
 #  arch_chroot "sed -i '/::1/s/$/                '${host_name}'/' /etc/hosts"
 }
@@ -313,7 +313,7 @@ install_bootloader(){
   fi
   [[ $UEFI -eq 1 ]] && pacstrap ${MOUNTPOINT} efibootmgr dosfstools
   [[ $UEFI -eq 1 ]] && efibootmgr -b 0 -B
-  [[ $UEFI -eq 1 ]] && efibootmgr -d /dev/vda -p 1 -c -L "VmArchMain" -l \vmlinuz-linux -u "root=/dev/vda3 rw initrd=/initramfs-linux.img"
+  [[ $UEFI -eq 1 ]] && efibootmgr -d /dev/vda -p 1 -c -L "VmArchMain" -l \vmlinuz-linux -u "root=/dev/vda3 rw initrd=/initramfs-linux.img intel_iommu=on"
 }
 #}}}
 #ROOT PASSWORD {{{
@@ -339,32 +339,32 @@ setup_docker(){
   arch_chroot "systemctl enable docker.service"
 }
 #}}}
-##SET UP KVM OPTIONS {{{
-#setup_kvm_options(){
-#  #arch_chroot "modprobe -r kvm_intel"
-#  #arch_chroot "modprobe kvm_intel nested=1"
-#  arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
+#SET UP KVM OPTIONS {{{
+setup_kvm_options(){
+  #arch_chroot "modprobe -r kvm_intel"
+  #arch_chroot "modprobe kvm_intel nested=1"
+  arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
 #  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
-#  #arch_chroot "systool -m kvm_intel -v | grep nested"
-#}
-##}}}
-##SET UP PROFILE {{{
-#setup_profile(){
-#  echo "EDITOR=/usr/bin/vim" >> /etc/profile
-#}
-##}}}
-##SET UP LIBVERTD {{{
-#setup_libvirtd(){
-#  arch_chroot "systemctl enable libvirtd.service"
-#  arch_chroot "systemctl start libvirtd.service"
-#}
-##}}}
-##SET UP KVM IMAGE DEPENDENCIES {{{
-#setup_kvm_image_dependencies(){
-#  cd  ${MOUNTPOINT}/opt
-#  git clone https://github.com/dbenavraham1/albis.git
-#}
-##}}}
+  #arch_chroot "systool -m kvm_intel -v | grep nested"
+}
+#}}}
+#SET UP PROFILE {{{
+setup_profile(){
+  echo "EDITOR=/usr/bin/vim" >> /etc/profile
+}
+#}}}
+#SET UP LIBVERTD {{{
+setup_libvirtd(){
+  arch_chroot "systemctl enable libvirtd.service"
+  arch_chroot "systemctl start libvirtd.service"
+}
+#}}}
+#SET UP KVM IMAGE DEPENDENCIES {{{
+setup_kvm_image_dependencies(){
+  cd  ${MOUNTPOINT}/opt
+  git clone https://github.com/dbenavraham1/albis.git
+}
+#}}}
 #FINISH {{{
 finish(){
   log "INSTALL COMPLETED"
@@ -403,9 +403,9 @@ install_bootloader
 root_password
 setup_sshd
 setup_docker
-#setup_kvm_options
-#setup_profile
-#setup_libvirtd
-#setup_kvm_image_dependencies
+setup_kvm_options
+setup_profile
+setup_libvirtd
+setup_kvm_image_dependencies
 finish
 #}}}
