@@ -333,18 +333,12 @@ setup_sshd(){
 #  arch_chroot "systemctl status sshd.service"
 }
 #}}}
-#SET UP DOCKER {{{
-setup_docker(){
-  arch_chroot "systemctl start docker.service"
-  arch_chroot "systemctl enable docker.service"
-}
-#}}}
 #SET UP KVM OPTIONS {{{
 setup_kvm_options(){
   #arch_chroot "modprobe -r kvm_intel"
   #arch_chroot "modprobe kvm_intel nested=1"
   arch_chroot "echo \"options kvm_intel nested=1\" >> /etc/modprobe.d/kvm_intel.conf"
-#  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
+  arch_chroot "echo \"options igb max_vfs=7\" >> /etc/modprobe.d/igb.conf"
   #arch_chroot "systool -m kvm_intel -v | grep nested"
 }
 #}}}
@@ -353,7 +347,7 @@ setup_profile(){
   echo "EDITOR=/usr/bin/vim" >> /etc/profile
 }
 #}}}
-#SET UP LIBVERTD {{{
+#SET UP LIBVIRTD {{{
 setup_libvirtd(){
   arch_chroot "systemctl enable libvirtd.service"
   arch_chroot "systemctl start libvirtd.service"
@@ -402,7 +396,6 @@ configure_mkinitcpio
 install_bootloader
 root_password
 setup_sshd
-setup_docker
 setup_kvm_options
 setup_profile
 setup_libvirtd
