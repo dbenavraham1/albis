@@ -95,8 +95,11 @@ NUM_PFs=${#PF_IFACE[@]}
 if [[ $NUM_PFs -gt 0 ]]; then
     PFDEVICE=0
     IFACE=$(printf $IFACE ${PF_IFACE[$PFDEVICE]})
+
+    echo "IFACE=$IFACE"
+    virsh net-start passthrough-`echo $IFACE`
+    virsh net-autostart `echo $IFACE`
 fi
-virsh net-autostart `echo $IFACE`
 
 cat <<EOF > config/alcc_setup.xml
 <domain type='kvm'>
