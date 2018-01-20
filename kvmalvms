@@ -190,6 +190,10 @@ cat <<EOF > config/alcc_setup.xml
     <video>
       <model type='cirrus' vram='16384' heads='1' primary='yes'/>
     </video -->
+    <graphics type='spice'/>
+    <video>
+      <model type='qxl'>
+    </video>
     <memballoon model='virtio'>
     </memballoon>
 EOF
