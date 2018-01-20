@@ -53,7 +53,7 @@ cat <<EOF > passthrough-`echo $i`.xml
 EOF
 
             virsh net-define passthrough-`echo $i`.xml
-            virsh net-start passthrough-`echo $i`
+#            virsh net-start passthrough-`echo $i`
 
 #            echo "Virtual Functions on $PF_VENDOR $PF_NAME ($i):"
 #            echo -e "PCI BDF\t\tInterface"
