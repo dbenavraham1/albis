@@ -97,7 +97,7 @@ if [[ $NUM_PFs -gt 0 ]]; then
     IFACE=$(printf $IFACE ${PF_IFACE[$PFDEVICE]})
 
     echo "IFACE=$IFACE"
-    virsh net-start passthrough-`echo $IFACE`
+    virsh net-start `echo $IFACE`
     virsh net-autostart `echo $IFACE`
 fi
 
