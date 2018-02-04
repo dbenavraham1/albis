@@ -102,7 +102,7 @@ if [[ $NUM_PFs -gt 0 ]]; then
     BUS=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[2]}')
     SLOT=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[3]}')
     FUNCTION=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[4]}')
-cat <<EOF > udvm1.xml
+cat <<EOF >> config/udvm1.xml
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
 	    <address type='pci' domain='0x$DOMAIN' bus='0x$BUS' slot='0x$SLOT' function='0x$FUNCTION'/>
