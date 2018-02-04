@@ -12,7 +12,7 @@ cd udvm1
 virsh destroy udvm1
 virsh undefine --nvram udvm1
 
-curl -O https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180201.0.x86_64.qcow2
+curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180201.0.x86_64.qcow2
 
 cat <<EOF > config/udvm1.xml
 <domain type='kvm'>
