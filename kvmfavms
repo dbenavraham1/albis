@@ -89,8 +89,9 @@ NIC_DIR="/sys/class/net"
 for i in $( ls $NIC_DIR) ;
 do
     if [ -d "${NIC_DIR}/$i/device" -a ! -L "${NIC_DIR}/$i/device/physfn" ]; then
-        PF_PCI_BDF[$pfi]=$PF_PCI
-	    ((pfi++))
+        PF_PCI_BDF[$pfi]=$( readlink "${NIC_DIR}/$i/device" )
+	echo ${PF_PCI_BDF[$pfi]}
+	((pfi++))
     fi
 done
 
@@ -101,7 +102,7 @@ if [[ $NUM_PFs -gt 0 ]]; then
     BUS=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[2]}')
     SLOT=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[3]}')
     FUNCTION=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[4]}')
-cat <<EOF >> config/alcc_setup.xml
+cat <<EOF > udvm1.xml
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
 	    <address type='pci' domain='0x$DOMAIN' bus='0x$BUS' slot='0x$SLOT' function='0x$FUNCTION'/>
