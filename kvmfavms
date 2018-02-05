@@ -227,10 +227,6 @@ cat <<EOF >> config/udvm1.xml
   </devices>
 </domain>
 EOF
-cat <<EOF >> config/udvm1.xml
-  </devices>
-</domain>
-EOF
 
 cat <<EOF > user-data
 instance-id: udvmid1
