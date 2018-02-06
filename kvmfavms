@@ -95,7 +95,8 @@ cd udvm1
 virsh destroy udvm1
 virsh undefine --nvram udvm1
 
-curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180201.0.x86_64.qcow2
+#curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
+curl -L https://getfedora.org/atomic_qcow2_latest -o atomic_qcow2_latest.qcow2
 
 cat <<EOF > config/udvm1.xml
 <domain type='kvm'>
@@ -130,7 +131,7 @@ cat <<EOF > config/udvm1.xml
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/mnt/vmlocal/kvm/guests/udvm1/Fedora-Atomic-27-20180201.0.x86_64.qcow2'/>
+      <source file='/mnt/vmlocal/kvm/guests/udvm1/atomic_qcow2_latest.qcow2'/>
       <target dev='vda' bus='virtio'/>
     </disk>
     <disk type='file' device='cdrom'>
@@ -228,12 +229,12 @@ cat <<EOF >> config/udvm1.xml
 </domain>
 EOF
 
-cat <<EOF > user-data
+cat <<EOF > meta-data
 instance-id: udvmid1
 local-hostname: udvm1
 EOF
 
-cat <<EOF > meta-data
+cat <<EOF > user-data
 #cloud-config
 password: atomic
 ssh_pwauth: True
