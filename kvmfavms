@@ -258,8 +258,8 @@ virsh define config/udvm`echo $vmi`.xml
 virsh start udvm`echo $vmi`
 virsh autostart udvm`echo $vmi`
 
-rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
-
 done
+
+rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
 
 exit 1
