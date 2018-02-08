@@ -99,12 +99,18 @@ NUM_DDs=${#DEV_DISKS[@]}
 # Setup fedora atomic ceph cluster
 #mkdir -p /opt/vmlocal/kvm/guests
 mkdir -p /mnt/vmlocal/kvm/guests
-#cd /opt/vmlocal/kvm/guests
-cd /mnt/vmlocal/kvm/guests
 
-array=( 1 2 3 4 5 6 )
+rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
+mkdir -p /mnt/vmlocal/kvm/guests/tmp_udvm
+#curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
+curl -L https://getfedora.org/atomic_qcow2_latest -o /mnt/vmlocal/kvm/guests/tmp_udvm/atomic_qcow2_latest.qcow2
+
+array=( 1 2 3 4 5 )
 for vmi in "${array[@]}"
 do
+
+#cd /opt/vmlocal/kvm/guests
+cd /mnt/vmlocal/kvm/guests
 
 rm -rf udvm`echo $vmi`
 mkdir -p udvm`echo $vmi`/config
@@ -113,8 +119,7 @@ cd udvm`echo $vmi`
 virsh destroy udvm`echo $vmi`
 virsh undefine --nvram udvm`echo $vmi`
 
-#curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
-curl -L https://getfedora.org/atomic_qcow2_latest -o atomic_qcow2_latest.qcow2
+cp /mnt/vmlocal/kvm/guests/tmp_udvm/atomic_qcow2_latest.qcow2 /mnt/vmlocal/kvm/guests/udvm`echo $vmi`/atomic_qcow2_latest.qcow2
 
 cat <<EOF > config/udvm`echo $vmi`.xml
 <domain type='kvm'>
@@ -252,6 +257,8 @@ genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 virsh define config/udvm`echo $vmi`.xml
 virsh start udvm`echo $vmi`
 virsh autostart udvm`echo $vmi`
+
+rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
 
 done
 
