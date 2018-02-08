@@ -91,6 +91,7 @@ do
     if [[ $i =~ ST3000DM|Hitachi_HDS5C ]]; then
         echo "Setup block device for: $i"
         DEV_DISKS[$ddi]=${DEV_DISK_DIR}/$i
+        ((ddi++))
     fi
 done
 
