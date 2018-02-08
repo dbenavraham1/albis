@@ -83,25 +83,43 @@ fi
 
 pacman -Sy cdrtools
 
+declare -A DEV_DISKS
+ddi=0
+DEV_DISK_DIR="/dev/disk/by-id"
+for i in $( ls $DEV_DISK_DIR);
+do
+    if [[ $i =~ ST3000DM|Hitachi_HDS5C ]]; then
+        echo "Setup block device for: $i"
+        DEV_DISKS[$ddi]=${DEV_DISK_DIR}/$i
+    fi
+done
+
+NUM_DDs=${#DEV_DISKS[@]}
+
 # Setup fedora atomic ceph cluster
 #mkdir -p /opt/vmlocal/kvm/guests
 mkdir -p /mnt/vmlocal/kvm/guests
 #cd /opt/vmlocal/kvm/guests
 cd /mnt/vmlocal/kvm/guests
-rm -rf udvm1
-mkdir -p udvm1/config
-cd udvm1
 
-virsh destroy udvm1
-virsh undefine --nvram udvm1
+array=( 1 2 3 4 5 6 )
+for vmi in "${array[@]}"
+do
+
+rm -rf udvm`echo $vmi`
+mkdir -p udvm`echo $vmi`/config
+cd udvm`echo $vmi`
+
+virsh destroy udvm`echo $vmi`
+virsh undefine --nvram udvm`echo $vmi`
 
 #curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
 curl -L https://getfedora.org/atomic_qcow2_latest -o atomic_qcow2_latest.qcow2
 
-cat <<EOF > config/udvm1.xml
+cat <<EOF > config/udvm`echo $vmi`.xml
 <domain type='kvm'>
-  <name>udvm1</name>
-  <description>Upsidedown vm 1</description>
+  <name>udvm$vmi</name>
+  <description>Upsidedown vm $vmi</description>
   <memory unit='KiB'>2097152</memory>
   <vcpu placement='static'>1</vcpu>
   <os>
@@ -131,12 +149,12 @@ cat <<EOF > config/udvm1.xml
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/mnt/vmlocal/kvm/guests/udvm1/atomic_qcow2_latest.qcow2'/>
+      <source file='/mnt/vmlocal/kvm/guests/udvm$vmi/atomic_qcow2_latest.qcow2'/>
       <target dev='vda' bus='virtio'/>
     </disk>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='/mnt/vmlocal/kvm/guests/udvm1/init.iso'/>
+      <source file='/mnt/vmlocal/kvm/guests/udvm$vmi/init.iso'/>
       <target dev='hda' bus='ide'/>
       <readonly/>
     </disk>
@@ -144,11 +162,6 @@ cat <<EOF > config/udvm1.xml
       <source network='$IFACE'/>
       <model type='rtl8139'/>
     </interface>
-    <!-- disk type='block' device='disk'>
-      <driver name='qemu' type='raw' />
-      <source dev='/dev/vdb' />
-      <target dev='vdb' bus='virtio' />
-    </disk -->
     <console type='pty'>
       <target type='serial' port='0'/>
     </console>
@@ -190,7 +203,7 @@ EOF
 #    BUS=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[2]}')
 #    SLOT=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[3]}')
 #    FUNCTION=$(echo ${PF_PCI_BDF[$PFDEVICE]} | awk '{match($1,"([0-9]+):([0-9]+):([0-9]+).([0-9]+)",a)}END{print a[4]}')
-#cat <<EOF >> config/udvm1.xml
+#cat <<EOF >> config/udvm`echo $vmi`.xml
 #    <hostdev mode='subsystem' type='pci' managed='yes'>
 #      <source>
 #	    <address type='pci' domain='0x$DOMAIN' bus='0x$BUS' slot='0x$SLOT' function='0x$FUNCTION'/>
@@ -199,39 +212,28 @@ EOF
 #EOF
 #fi
 
-declare -A DEV_DISKS
-ddi=0
-DEV_DISK_DIR="/dev/disk/by-id"
-for i in $( ls $DEV_DISK_DIR);
-do
-    if [[ $i =~ ST3000DM|Hitachi_HDS5C ]]; then
-        echo "Setup block device for: $i"
-        DEV_DISKS[$ddi]=${DEV_DISK_DIR}/$i
-    fi
-done
-
-NUM_DDs=${#DEV_DISKS[@]}
-if [[ $NUM_DDs -gt 0 ]]; then
-    DDi=0
+if [[ $vmi -le $NUM_DDs ]]; then
+    DDi=$vmi - 1
     DEV_DISK_POSTFIX=$(ls -la ${DEV_DISKS[$DDi]} | awk -F"${DEV_DISKS[$DDi]} -> ../../" '{print $2}')
     echo "Setup block device for: ${DEV_DISKS[$DDi]}"
-cat <<EOF >> config/udvm1.xml
+cat <<EOF >> config/udvm`echo $vmi`.xml
     <disk type="block" device="disk">
       <driver name="qemu" type="raw" />
       <source dev="${DEV_DISKS[$DDi]}" />
-      <target dev="$DEV_DISK_POSTFIX" bus="virtio" />
+      <!-- target dev="$DEV_DISK_POSTFIX" bus="virtio" / -->
+      <target dev="vdb" bus="virtio" />
     </disk>
 EOF
 fi
 
-cat <<EOF >> config/udvm1.xml
+cat <<EOF >> config/udvm`echo $vmi`.xml
   </devices>
 </domain>
 EOF
 
 cat <<EOF > meta-data
-instance-id: udvmid1
-local-hostname: udvm1
+instance-id: udvmid$vmi
+local-hostname: udvm$vmi
 EOF
 
 cat <<EOF > user-data
@@ -247,8 +249,10 @@ EOF
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 
-virsh define config/udvm1.xml
-virsh start udvm1
-virsh autostart udvm1
+virsh define config/udvm`echo $vmi`.xml
+virsh start udvm`echo $vmi`
+virsh autostart udvm`echo $vmi`
+
+done
 
 exit 1
