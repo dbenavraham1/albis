@@ -338,6 +338,38 @@ write_files:
         [Install]
         WantedBy=multi-user.target
     path: /etc/systemd/system/ceph-mds.service
+EOF
+
+if [[ $vmi -e $NUM_DDs ]]; then
+    echo "Setup ceph settings"
+cat <<EOF >> user-data
+  - content: |
+        #!/bin/bash
+        echo "Setup ceph settings" >> /home/fedora/runcmd.log
+        ceph osd pool set cephfs_data size 2
+        ceph osd pool set cephfs_metadata size 2
+        ceph osd set noscrub
+        ceph osd set nodeep-scrub
+        ceph auth get-or-create client.dockerswarm osd 'allow rw' mon 'allow r' mds 'allow' > /etc/ceph/keyring.dockerswarm
+        echo "Ceph settings setup!" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-settings.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Setup ceph settings
+        After=ceph-mds.target
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-settings.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-settings.service
+EOF
+fi
+
+cat <<EOF >> user-data
 runcmd:
   - systemctl enable ceph-mon.service
   - systemctl enable ceph-mgr.service
@@ -348,6 +380,14 @@ runcmd:
   - systemctl start ceph-ods.service
   - systemctl start ceph-mds.service
 EOF
+
+if [[ $vmi -e $NUM_DDs ]]; then
+    echo "Setup ceph settings"
+cat <<EOF >> user-data
+  - systemctl enable ceph-settings.service
+  - systemctl start ceph-settings.service
+EOF
+fi
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 
