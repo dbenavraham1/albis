@@ -311,24 +311,24 @@ write_files:
     path: /etc/systemd/system/ceph-mgr.service
   - content: |
         #!/bin/bash
-        echo "Start ceph docker ods" >> /home/fedora/runcmd.log
+        echo "Start ceph docker osd" >> /home/fedora/runcmd.log
         ceph auth get client.bootstrap-osd -o /var/lib/ceph/bootstrap-osd/ceph.keyring
         docker run -d --net=host --privileged=true --pid=host -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev/:/dev/ -e OSD_FORCE_ZAP=1 -e OSD_DEVICE=/dev/vdb -e OSD_TYPE=disk --name="ceph-osd" --restart=always ceph/daemon osd_ceph_disk
-        echo "Ceph docker ods started" >> /home/fedora/runcmd.log
-    path: /opt/docker/ceph-ods.sh
+        echo "Ceph docker osd started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-osd.sh
     permissions: 0755
   - content: |
         [Unit]
-        Description=Start ceph ods docker container
+        Description=Start ceph osd docker container
         After=ceph-mgr.target
 
         [Service]
         Type=forking
-        ExecStart=/usr/bin/bash /opt/docker/ceph-ods.sh
+        ExecStart=/usr/bin/bash /opt/docker/ceph-osd.sh
 
         [Install]
         WantedBy=multi-user.target
-    path: /etc/systemd/system/ceph-ods.service
+    path: /etc/systemd/system/ceph-osd.service
   - content: |
         #!/bin/bash
         echo "Start ceph docker mds" >> /home/fedora/runcmd.log
@@ -339,7 +339,7 @@ write_files:
   - content: |
         [Unit]
         Description=Start ceph mds docker container
-        After=ceph-ods.target
+        After=ceph-osd.target
 
         [Service]
         Type=forking
@@ -383,11 +383,11 @@ cat <<EOF >> user-data
 runcmd:
   - systemctl enable ceph-mon.service
   - systemctl enable ceph-mgr.service
-  - systemctl enable ceph-ods.service
+  - systemctl enable ceph-osd.service
   - systemctl enable ceph-mds.service
   - systemctl start ceph-mon.service
   - systemctl start ceph-mgr.service
-  - systemctl start ceph-ods.service
+  - systemctl start ceph-osd.service
   - systemctl start ceph-mds.service
 EOF
 
