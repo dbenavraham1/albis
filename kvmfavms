@@ -114,11 +114,21 @@ do
 cd /mnt/vmlocal/kvm/guests
 
 rm -rf udvm`echo $vmi`
-mkdir -p udvm`echo $vmi`/config
-cd udvm`echo $vmi`
 
 virsh destroy udvm`echo $vmi`
 virsh undefine --nvram udvm`echo $vmi`
+
+done
+
+array=( 1 2 3 4 5 )
+for vmi in "${array[@]}"
+do
+
+#cd /opt/vmlocal/kvm/guests
+cd /mnt/vmlocal/kvm/guests
+
+mkdir -p udvm`echo $vmi`/config
+cd udvm`echo $vmi`
 
 cp /mnt/vmlocal/kvm/guests/tmp_udvm/atomic_qcow2_latest.qcow2 /mnt/vmlocal/kvm/guests/udvm`echo $vmi`/atomic_qcow2_latest.qcow2
 
