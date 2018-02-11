@@ -271,7 +271,7 @@ write_files:
         chcon -Rt svirt_sandbox_file_t /var/lib/ceph
         chown -R 64045:64045 /var/lib/ceph
         echo "Ceph setup done!" >> /home/fedora/runcmd.log
-        ip=\$(ip addr show eth0 | grep "inet\\b" | awk '{print $2}' | cut -d/ -f1)
+        ip=\$(ip addr show eth0 | grep "inet\b" | awk '{print \$2}' | cut -d/ -f1)
         echo "eth0 ip = \$ip" >> /home/fedora/runcmd.log
         echo "Start ceph docker mon" >> /home/fedora/runcmd.log
         docker run -d --net=host --restart always -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -e MON_IP=\$ip -e CEPH_PUBLIC_NETWORK=192.168.1.0/24 --name="ceph-mon" ceph/daemon mon
