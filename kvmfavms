@@ -251,6 +251,81 @@ chpasswd: { expire: True }
 ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD1+qwWHMFQu0P8tHBaLrJvKiBfvieCXP3n0ET1YOpWn+56ibbUFJCXnBTAubx9s991R6eweFobYojJdytrxMh2zPKuCHD/pUKCpEh/ZWO/MO6PERK9F3tSOYSxHzaVJ5z0Yj/W6xWd2eoKNVjN1kuBNQQrbWbGyTvf3WPNmQQ7+zUf70YkhnBHQYOMA3MTQ5yl9UsybG8GfwtMtwBGeCSwFg50m1UgFECHgM3oiyzY7NLBgTHgkrkvqLf4Z062gJ/fB+/Yne8/dh8fqKB2VCUQ8eN0AspFa6czzgyrIYmxoO+KJNks+gT5mPY02loroq+Ee78fL+51eLfcSXnu6UwN root@upsidedownvm1
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDaGLHzNBlg+aF455ViJGPIUIvTIpoNlYDCyaoohhqqf9F1E38CoX3iQz/mwZDFFkdGb9VrP9GIXAmf89zfxSOhQJ/1jw7p33oHgNIHQXvm08Ax1AdwxPRIibTGoMkIyCZsVa8kYV6uCSJA3zerD6+i12UxxU426/5JtOTQf+Xhx9ENtiT9xV5UuNCodF1czqkl3QQGPeOzO42nYvsZNaX5ZlEifhU2Kdsyy7RO3RNjIBCqthhynS4g0OrdIuH40U2Jevn21xFSJRlZiAkzYTHpdgdnszokatsXKIN2WCXYVXzKOh4WzZJXbh+p6HjuG5EnqsPuABRnhi3qXMIidM38pjHeZMdOmTuySfTRibM6ufsIzaQWsSWlM1zWPa/FXsNbKG3M6XQE2yBalfMUe6VQliO2r8lSfalDVIUBDNnPCQYrPTmaqA4zwSyCPy52hxBn09Sc2Tjp2xbaCa73ACnp281ByD2iH+xt7H09jmBwafCpHsAiQ7LN/BRsdl34tLxGqYRhc51qr5vRbLgZGEZFfoJ7vg7QBgLk4RaJb8M8pg0sHZTyKWfE1f6Q79ydsj6D9a8QxkK/a8tvWAEzB7bD5oyGRLY5e0qpnBgZelMOkFcjtJ1xDdqRwRGRoKyE0pMPpHBeNgBlBMiVOHaqEHQAcOoSy3QB5tUZL9tz2hCV7w== dbenavraham@gogoair.com
+
+write_files:
+  - content: |
+        #!/bin/bash
+        echo "Setup ceph" >> /home/fedora/runcmd.log
+        mkdir /var/lib/ceph
+        chcon -Rt svirt_sandbox_file_t /etc/ceph
+        chcon -Rt svirt_sandbox_file_t /var/lib/ceph
+        chown -R 64045:64045 /var/lib/ceph
+        echo "Ceph setup done!" >> /home/fedora/runcmd.log
+        ip=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+        echo "eth0 ip = $ip" >> /home/fedora/runcmd.log
+        echo "Start ceph docker mon" >> /home/fedora/runcmd.log
+        docker run -d --net=host --restart always -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -e MON_IP=$ip -e CEPH_PUBLIC_NETWORK=192.168.1.0/24 --name="ceph-mon" ceph/daemon mon
+        echo "Ceph docker mon started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-mon.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Start ceph mon docker container
+        After=network-online.target
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-mon.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-mon.service
+  - content: |
+        #!/bin/bash
+        echo "Start ceph docker mgr" >> /home/fedora/runcmd.log
+        docker run -d --net=host --privileged=true --pid=host -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ --name="ceph-mgr" --restart=always ceph/daemon mgr
+        echo "Ceph docker mgr started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-mgr.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Start ceph mgr docker container
+        After=ceph-mon.target
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-mgr.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-mgr.service
+  - content: |
+        #!/bin/bash
+        echo "Start ceph docker ods" >> /home/fedora/runcmd.log
+        ceph auth get client.bootstrap-osd -o /var/lib/ceph/bootstrap-osd/ceph.keyring
+        docker run -d --net=host --privileged=true --pid=host -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev/:/dev/ -e OSD_FORCE_ZAP=1 -e OSD_DEVICE=/dev/vdb -e OSD_TYPE=disk --name="ceph-osd" --restart=always ceph/daemon osd_ceph_disk
+        echo "Ceph docker ods started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-ods.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Start ceph ods docker container
+        After=ceph-mgr.target
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-ods.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-ods.service
+runcmd:
+  - systemctl enable ceph-mon.service
+  - systemctl enable ceph-mgr.service
+  - systemctl enable ceph-ods.service
+  - systemctl start ceph-mon.service
+  - systemctl start ceph-mgr.service
+  - systemctl start ceph-ods.service
 EOF
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
