@@ -1,5 +1,19 @@
 #!/bin/bash -x
 
+array=( 1 2 3 4 5 )
+for vmi in "${array[@]}"
+do
+
+#cd /opt/vmlocal/kvm/guests
+cd /mnt/vmlocal/kvm/guests
+
+rm -rf udvm`echo $vmi`
+
+virsh destroy udvm`echo $vmi`
+virsh undefine --nvram udvm`echo $vmi`
+
+done
+
 # Setup network
 mkdir -p /mnt/vmlocal/kvm/network
 cd /mnt/vmlocal/kvm/network
@@ -105,20 +119,6 @@ rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
 mkdir -p /mnt/vmlocal/kvm/guests/tmp_udvm
 #curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
 curl -L https://getfedora.org/atomic_qcow2_latest -o /mnt/vmlocal/kvm/guests/tmp_udvm/atomic_qcow2_latest.qcow2
-
-array=( 1 2 3 4 5 )
-for vmi in "${array[@]}"
-do
-
-#cd /opt/vmlocal/kvm/guests
-cd /mnt/vmlocal/kvm/guests
-
-rm -rf udvm`echo $vmi`
-
-virsh destroy udvm`echo $vmi`
-virsh undefine --nvram udvm`echo $vmi`
-
-done
 
 array=( 1 2 3 4 5 )
 for vmi in "${array[@]}"
