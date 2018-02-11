@@ -340,7 +340,7 @@ write_files:
     path: /etc/systemd/system/ceph-mds.service
 EOF
 
-if [[ $vmi -e $NUM_DDs ]]; then
+if [[ $vmi -eq $NUM_DDs ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
   - content: |
@@ -381,7 +381,7 @@ runcmd:
   - systemctl start ceph-mds.service
 EOF
 
-if [[ $vmi -e $NUM_DDs ]]; then
+if [[ $vmi -eq $NUM_DDs ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
   - systemctl enable ceph-settings.service
