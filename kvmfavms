@@ -319,13 +319,34 @@ write_files:
         [Install]
         WantedBy=multi-user.target
     path: /etc/systemd/system/ceph-ods.service
+  - content: |
+        #!/bin/bash
+        echo "Start ceph docker mds" >> /home/fedora/runcmd.log
+        docker run -d --net=host --name ceph-mds --restart always -v /var/lib/ceph/:/var/lib/ceph/ -v /etc/ceph:/etc/ceph -e CEPHFS_CREATE=1 -e CEPHFS_DATA_POOL_PG=256 -e CEPHFS_METADATA_POOL_PG=256 ceph/daemon mds
+        echo "Ceph docker mds started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-mds.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Start ceph mds docker container
+        After=ceph-ods.target
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-mds.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-mds.service
 runcmd:
   - systemctl enable ceph-mon.service
   - systemctl enable ceph-mgr.service
   - systemctl enable ceph-ods.service
+  - systemctl enable ceph-mds.service
   - systemctl start ceph-mon.service
   - systemctl start ceph-mgr.service
   - systemctl start ceph-ods.service
+  - systemctl start ceph-mds.service
 EOF
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
