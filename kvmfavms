@@ -285,7 +285,7 @@ EOF
 if [[ $vmi -gt 1 ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
-        tar -xzf /tmp/cepht/ceph.tgz -C /
+        tar -xzf /tmp/ceph/ceph.tgz -C /
 EOF
 fi
 
