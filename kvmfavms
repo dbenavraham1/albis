@@ -120,6 +120,8 @@ mkdir -p /mnt/vmlocal/kvm/guests/tmp_udvm
 #curl -O -L https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-27-20180201.0/CloudImages/x86_64/images/Fedora-Atomic-27-20180104.5.x86_64.qcow2
 curl -L https://getfedora.org/atomic_qcow2_latest -o /mnt/vmlocal/kvm/guests/tmp_udvm/atomic_qcow2_latest.qcow2
 
+mkdir -p /tmp/ceph
+
 array=( 1 2 3 4 5 )
 for vmi in "${array[@]}"
 do
@@ -174,6 +176,10 @@ cat <<EOF > config/udvm`echo $vmi`.xml
       <target dev='hda' bus='ide'/>
       <readonly/>
     </disk>
+    <filesystem type='mount' accessmode='passthrough'>
+      <source dir='/tmp/ceph'/>
+      <target dir='/tmp/ceph'/>
+    </filesystem>
     <interface type='network'>
       <source network='$IFACE'/>
       <model type='rtl8139'/>
@@ -274,6 +280,7 @@ write_files:
   - content: |
         #!/bin/bash
         echo "Setup ceph" >> /home/fedora/runcmd.log
+        mount -t 9p -o trans=virtio,version=9p2000.L /tmp/ceph /tmp/ceph
         mkdir /var/lib/ceph
         chcon -Rt svirt_sandbox_file_t /etc/ceph
         chcon -Rt svirt_sandbox_file_t /var/lib/ceph
@@ -301,6 +308,16 @@ write_files:
   - content: |
         #!/bin/bash
         echo "Start ceph docker mgr" >> /home/fedora/runcmd.log
+EOF
+
+if [[ $vmi -eq 1 ]]; then
+    echo "Setup ceph settings"
+cat <<EOF >> user-data
+        tar -czf /tmp/ceph/ceph.tgz -C / etc/ceph
+EOF
+fi
+
+cat <<EOF >> user-data
         docker run -d --net=host --privileged=true --pid=host -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ --name="ceph-mgr" --restart=always ceph/daemon mgr
         echo "Ceph docker mgr started" >> /home/fedora/runcmd.log
     path: /opt/docker/ceph-mgr.sh
@@ -412,6 +429,14 @@ genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 virsh define config/udvm`echo $vmi`.xml
 virsh start udvm`echo $vmi`
 virsh autostart udvm`echo $vmi`
+
+file=/tmp/ceph/ceph.tgz
+while [ ! -f "$file" ]
+do
+#    inotifywait -qqt 2 -e create -e moved_to "$(dirname $file)"
+    echo "Ceph files still not ready. Sleep for 5 seconds..."
+    sleep 5
+done
 
 done
 
