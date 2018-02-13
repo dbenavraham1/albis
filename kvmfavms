@@ -176,7 +176,7 @@ cat <<EOF > config/udvm`echo $vmi`.xml
       <target dev='hda' bus='ide'/>
       <readonly/>
     </disk>
-    <filesystem type='mount' accessmode='passthrough'>
+    <filesystem type='mount' accessmode='mapped'>
       <source dir='/tmp/ceph'/>
       <target dir='/tmp/ceph'/>
     </filesystem>
@@ -280,6 +280,17 @@ write_files:
   - content: |
         #!/bin/bash
         echo "Setup ceph" >> /home/fedora/runcmd.log
+EOF
+
+if [[ $vmi -gt 1 ]]; then
+    echo "Setup ceph settings"
+cat <<EOF >> user-data
+        tar -xzf /tmp/cepht/ceph.tgz -C /
+EOF
+fi
+
+cat <<EOF >> user-data
+        mkdir -p /tmp/ceph
         mount -t 9p -o trans=virtio,version=9p2000.L /tmp/ceph /tmp/ceph
         mkdir /var/lib/ceph
         chcon -Rt svirt_sandbox_file_t /etc/ceph
