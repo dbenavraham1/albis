@@ -122,6 +122,7 @@ curl -L https://getfedora.org/atomic_qcow2_latest -o /mnt/vmlocal/kvm/guests/tmp
 
 mkdir -p /opt/ceph
 chmod -R 777 /opt/ceph
+rm -rf /opt/ceph/*
 
 array=( 1 2 3 4 5 )
 for vmi in "${array[@]}"
