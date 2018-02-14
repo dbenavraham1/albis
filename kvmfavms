@@ -445,9 +445,9 @@ virsh autostart udvm`echo $vmi`
 file=/opt/ceph/ceph.tgz
 while [ ! -f "$file" ]
 do
-#    inotifywait -qqt 2 -e create -e moved_to "$(dirname $file)"
-    echo "Ceph files still not ready. Sleep for 5 seconds..."
-    sleep 5
+    inotifywait -qqt 2 -e create -e moved_to "$(dirname $file)"
+#    echo "Ceph files still not ready. Sleep for 5 seconds..."
+#    sleep 5
 done
 
 done
