@@ -248,6 +248,7 @@ w
 " | fdisk /dev/`echo $DEV_DISK_POSTFIX` || exit 1
     fi
     echo "Setup block device for: ${DEV_DISKS[$DDi]}"
+    echo "Setup block device for with postfix: $DEV_DISK_POSTFIX"
 cat <<EOF >> config/udvm`echo $vmi`.xml
     <disk type="block" device="disk">
       <driver name="qemu" type="raw" />
