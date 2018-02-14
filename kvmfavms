@@ -280,6 +280,9 @@ ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD1+qwWHMFQu0P8tHBaLrJvKiBfvieCXP3n0ET1YOpWn+56ibbUFJCXnBTAubx9s991R6eweFobYojJdytrxMh2zPKuCHD/pUKCpEh/ZWO/MO6PERK9F3tSOYSxHzaVJ5z0Yj/W6xWd2eoKNVjN1kuBNQQrbWbGyTvf3WPNmQQ7+zUf70YkhnBHQYOMA3MTQ5yl9UsybG8GfwtMtwBGeCSwFg50m1UgFECHgM3oiyzY7NLBgTHgkrkvqLf4Z062gJ/fB+/Yne8/dh8fqKB2VCUQ8eN0AspFa6czzgyrIYmxoO+KJNks+gT5mPY02loroq+Ee78fL+51eLfcSXnu6UwN root@upsidedownvm1
   - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDaGLHzNBlg+aF455ViJGPIUIvTIpoNlYDCyaoohhqqf9F1E38CoX3iQz/mwZDFFkdGb9VrP9GIXAmf89zfxSOhQJ/1jw7p33oHgNIHQXvm08Ax1AdwxPRIibTGoMkIyCZsVa8kYV6uCSJA3zerD6+i12UxxU426/5JtOTQf+Xhx9ENtiT9xV5UuNCodF1czqkl3QQGPeOzO42nYvsZNaX5ZlEifhU2Kdsyy7RO3RNjIBCqthhynS4g0OrdIuH40U2Jevn21xFSJRlZiAkzYTHpdgdnszokatsXKIN2WCXYVXzKOh4WzZJXbh+p6HjuG5EnqsPuABRnhi3qXMIidM38pjHeZMdOmTuySfTRibM6ufsIzaQWsSWlM1zWPa/FXsNbKG3M6XQE2yBalfMUe6VQliO2r8lSfalDVIUBDNnPCQYrPTmaqA4zwSyCPy52hxBn09Sc2Tjp2xbaCa73ACnp281ByD2iH+xt7H09jmBwafCpHsAiQ7LN/BRsdl34tLxGqYRhc51qr5vRbLgZGEZFfoJ7vg7QBgLk4RaJb8M8pg0sHZTyKWfE1f6Q79ydsj6D9a8QxkK/a8tvWAEzB7bD5oyGRLY5e0qpnBgZelMOkFcjtJ1xDdqRwRGRoKyE0pMPpHBeNgBlBMiVOHaqEHQAcOoSy3QB5tUZL9tz2hCV7w== dbenavraham@gogoair.com
 
+packages:
+  - inotify-tools
+
 write_files:
   - content: |
         #!/bin/bash
@@ -328,6 +331,13 @@ EOF
 if [[ $vmi -eq 1 ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
+        file=/etc/ceph/ceph.mon.keyring
+        while [ ! -f "$file" ]
+        do
+            inotifywait -qqt 5 -e create -e moved_to "$(dirname $file)"
+        #    echo "Ceph files still not ready. Sleep for 5 seconds..."
+        #    sleep 5
+        done
         tar -czf /opt/ceph/ceph.tgz -C / etc/ceph
 EOF
 fi
