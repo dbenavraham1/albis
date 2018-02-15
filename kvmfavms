@@ -290,6 +290,7 @@ if [[ $vmi -gt 1 ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
         tar -xzf /opt/ceph/ceph.tgz -C /
+        cp /etc/ceph/ceph.conf /etc/ceph/ceph.conf_bak
 EOF
 fi
 
