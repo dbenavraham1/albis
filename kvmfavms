@@ -287,9 +287,9 @@ write_files:
 EOF
 
 if [[ $vmi -gt 1 ]]; then
-    echo "Setup ceph settings"
 cat <<EOF >> user-data
         tar -xzf /opt/ceph/ceph.tgz -C /
+        tar -xzf /opt/ceph/ceph.tgz -C /opt/ceph
         cp /etc/ceph/ceph.conf /etc/ceph/ceph.conf_bak
 EOF
 fi
@@ -327,7 +327,6 @@ cat <<EOF >> user-data
 EOF
 
 if [[ $vmi -eq 1 ]]; then
-    echo "Setup ceph settings"
 cat <<EOF >> user-data
         file=/etc/ceph/ceph.mon.keyring
         while [ ! -f "\$file" ]
@@ -399,7 +398,6 @@ cat <<EOF >> user-data
 EOF
 
 if [[ $vmi -eq $NUM_DDs ]]; then
-    echo "Setup ceph settings"
 cat <<EOF >> user-data
   - content: |
         #!/bin/bash
@@ -440,7 +438,6 @@ runcmd:
 EOF
 
 if [[ $vmi -eq $NUM_DDs ]]; then
-    echo "Setup ceph settings"
 cat <<EOF >> user-data
   - systemctl enable ceph-settings.service
   - systemctl start ceph-settings.service
