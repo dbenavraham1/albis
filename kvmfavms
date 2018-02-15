@@ -284,19 +284,17 @@ write_files:
   - content: |
         #!/bin/bash
         echo "Setup ceph" >> /home/fedora/runcmd.log
+        mkdir -p /opt/ceph
+        mount -t 9p -o trans=virtio,version=9p2000.L /opt/ceph /opt/ceph
 EOF
 
 if [[ $vmi -gt 1 ]]; then
 cat <<EOF >> user-data
         tar -xzf /opt/ceph/ceph.tgz -C /
-        tar -xzf /opt/ceph/ceph.tgz -C /opt/ceph
-        cp /etc/ceph/ceph.conf /etc/ceph/ceph.conf_bak
 EOF
 fi
 
 cat <<EOF >> user-data
-        mkdir -p /opt/ceph
-        mount -t 9p -o trans=virtio,version=9p2000.L /opt/ceph /opt/ceph
         mkdir /var/lib/ceph
         chcon -Rt svirt_sandbox_file_t /etc/ceph
         chcon -Rt svirt_sandbox_file_t /var/lib/ceph
