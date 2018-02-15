@@ -347,7 +347,7 @@ cat <<EOF >> user-data
   - content: |
         [Unit]
         Description=Start ceph mgr docker container
-        After=ceph-mon.target
+        After=ceph-mon.service
 
         [Service]
         Type=forking
