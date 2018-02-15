@@ -329,9 +329,9 @@ if [[ $vmi -eq 1 ]]; then
     echo "Setup ceph settings"
 cat <<EOF >> user-data
         file=/etc/ceph/ceph.mon.keyring
-        while [ ! -f "$file" ]
+        while [ ! -f "\$file" ]
         do
-        #    inotifywait -qqt 5 -e create -e moved_to "$(dirname $file)"
+        #    inotifywait -qqt 5 -e create -e moved_to "\$(dirname \$file)"
             echo "Ceph files still not ready. Sleep for 5 seconds..."
             sleep 5
         done
