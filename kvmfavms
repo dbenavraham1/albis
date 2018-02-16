@@ -242,6 +242,8 @@ EOF
 if [[ $vmi -le $NUM_DDs ]]; then
     DDi=$(($vmi - 1))
     DEV_DISK_POSTFIX=$(ls -la ${DEV_DISKS[$DDi]} | awk -F"${DEV_DISKS[$DDi]} -> ../../" '{print $2}')
+    wipefs /dev/`echo $DEV_DISK_POSTFIX`
+    /usr/sbin/sgdisk --clear --mbrtogpt -- /dev/`echo $DEV_DISK_POSTFIX`
 echo "
 p
 o
@@ -255,7 +257,8 @@ cat <<EOF >> config/udvm`echo $vmi`.xml
       <driver name="qemu" type="raw" />
       <source dev="${DEV_DISKS[$DDi]}" />
       <!-- target dev="$DEV_DISK_POSTFIX" bus="virtio" / -->
-      <target dev="v${DEV_DISK_POSTFIX:(-2)}" bus="virtio" />
+      <!-- target dev="v${DEV_DISK_POSTFIX:(-2)}" bus="virtio" / -->
+      <target dev="vdb" bus="virtio" />
     </disk>
 EOF
 fi
