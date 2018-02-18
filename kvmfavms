@@ -250,7 +250,8 @@ o
 p
 w
 " | fdisk /dev/`echo $DEV_DISK_POSTFIX` || exit 1
-    dd if=/dev/urandom | pv | sudo dd of=/dev/`echo $DEV_DISK_POSTFIX` bs=1M
+#    dd if=/dev/urandom | pv | sudo dd of=/dev/`echo $DEV_DISK_POSTFIX` bs=1M
+    wipe -r /dev/`echo $DEV_DISK_POSTFIX`1
     echo "Setup block device for: ${DEV_DISKS[$DDi]}"
     echo "Setup block device for with postfix: $DEV_DISK_POSTFIX"
 cat <<EOF >> config/udvm`echo $vmi`.xml

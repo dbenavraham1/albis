@@ -229,7 +229,7 @@ install_base_system(){
   pacman -Sy archlinux-keyring
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
-  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf inotify-tools
+  pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf inotify-tools pv wipe
   [[ $? -ne 0 ]] && err "Installing base system to ${MOUNTPOINT} failed. Check error messages above."
   local PTABLE=`parted -l | grep "gpt"`
   [[ -n $PTABLE ]] && pacstrap ${MOUNTPOINT} gptfdisk
