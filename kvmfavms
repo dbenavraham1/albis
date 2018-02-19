@@ -248,6 +248,14 @@ if [[ $vmi -le $NUM_DDs ]]; then
 echo "
 p
 o
+n
+p
+1
+
++512M
+w
+p
+o
 p
 w
 " | fdisk /dev/`echo $DEV_DISK_POSTFIX` || exit 1
