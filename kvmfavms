@@ -242,6 +242,7 @@ EOF
 if [[ $vmi -le $NUM_DDs ]]; then
     DDi=$(($vmi - 1))
     DEV_DISK_POSTFIX=$(ls -la ${DEV_DISKS[$DDi]} | awk -F"${DEV_DISKS[$DDi]} -> ../../" '{print $2}')
+    wipe -r /dev/`echo $DEV_DISK_POSTFIX`1
     wipefs /dev/`echo $DEV_DISK_POSTFIX`
     /usr/sbin/sgdisk --clear --mbrtogpt -- /dev/`echo $DEV_DISK_POSTFIX`
 echo "
@@ -251,8 +252,6 @@ p
 w
 " | fdisk /dev/`echo $DEV_DISK_POSTFIX` || exit 1
 #    dd if=/dev/urandom | pv | sudo dd of=/dev/`echo $DEV_DISK_POSTFIX` bs=1M
-    wipe -r /dev/`echo $DEV_DISK_POSTFIX`1
-    wipefs /dev/`echo $DEV_DISK_POSTFIX`
     echo "Setup block device for: ${DEV_DISKS[$DDi]}"
     echo "Setup block device for with postfix: $DEV_DISK_POSTFIX"
 cat <<EOF >> config/udvm`echo $vmi`.xml
