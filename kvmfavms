@@ -248,7 +248,8 @@ if [[ $vmi -le $NUM_DDs ]]; then
     wipe -r /dev/`echo $DEV_DISK_POSTFIX`4
     wipefs /dev/`echo $DEV_DISK_POSTFIX`
     sgdisk -Z /dev/`echo $DEV_DISK_POSTFIX`
-    /usr/sbin/sgdisk --clear --mbrtogpt -- /dev/`echo $DEV_DISK_POSTFIX`
+    sgdisk -Z /dev/`echo $DEV_DISK_POSTFIX`
+    sgdisk -Z /dev/`echo $DEV_DISK_POSTFIX`
 #    dd if=/dev/urandom | pv | sudo dd of=/dev/`echo $DEV_DISK_POSTFIX` bs=1M
     echo "Setup block device for: ${DEV_DISKS[$DDi]}"
     echo "Setup block device for with postfix: $DEV_DISK_POSTFIX"
