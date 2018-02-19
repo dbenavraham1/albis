@@ -242,10 +242,10 @@ EOF
 if [[ $vmi -le $NUM_DDs ]]; then
     DDi=$(($vmi - 1))
     DEV_DISK_POSTFIX=$(ls -la ${DEV_DISKS[$DDi]} | awk -F"${DEV_DISKS[$DDi]} -> ../../" '{print $2}')
-    wipe -r /dev/`echo $DEV_DISK_POSTFIX`4
-    wipe -r /dev/`echo $DEV_DISK_POSTFIX`3
-    wipe -r /dev/`echo $DEV_DISK_POSTFIX`2
     wipe -r /dev/`echo $DEV_DISK_POSTFIX`1
+#    wipe -r /dev/`echo $DEV_DISK_POSTFIX`2
+    wipe -r /dev/`echo $DEV_DISK_POSTFIX`3
+    wipe -r /dev/`echo $DEV_DISK_POSTFIX`4
     wipefs /dev/`echo $DEV_DISK_POSTFIX`
     sgdisk -Z /dev/`echo $DEV_DISK_POSTFIX`
     /usr/sbin/sgdisk --clear --mbrtogpt -- /dev/`echo $DEV_DISK_POSTFIX`
