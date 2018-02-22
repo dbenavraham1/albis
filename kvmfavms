@@ -372,7 +372,7 @@ cat <<EOF >> user-data
   - content: |
         [Unit]
         Description=Start ceph osd docker container
-        After=ceph-mgr.target
+        After=ceph-mgr.service
 
         [Service]
         Type=forking
@@ -391,7 +391,7 @@ cat <<EOF >> user-data
   - content: |
         [Unit]
         Description=Start ceph mds docker container
-        After=ceph-osd.target
+        After=ceph-osd.service
 
         [Service]
         Type=forking
@@ -400,6 +400,42 @@ cat <<EOF >> user-data
         [Install]
         WantedBy=multi-user.target
     path: /etc/systemd/system/ceph-mds.service
+  - content: |
+        [Unit]
+        Description=Runs ceph-status.service 5 seconds after boot
+
+        [Timer]
+        # Time to wait after booting before we run first time
+        OnBootSec=60sec
+        OnUnitActiveSec=5sec
+        Unit=ceph-status.service
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-status.timer
+  - content: |
+        #!/bin/bash
+        echo "Start ceph status" >> /home/fedora/runcmd.log
+        osd=\$(ceph status | grep "osd: " | awk '{print \$2}' | cut -d/ -f1)
+        node=\$(cat /etc/hostname | sed -r 's/[^0-9]*//g')
+        if [[ \$node -eq \$osd ]]; then
+            touch /opt/ceph/osd`echo \$node`
+        fi
+        echo "Ceph status started" >> /home/fedora/runcmd.log
+    path: /opt/docker/ceph-status.sh
+    permissions: 0755
+  - content: |
+        [Unit]
+        Description=Start ceph status
+        After=ceph-mds.service
+
+        [Service]
+        Type=forking
+        ExecStart=/usr/bin/bash /opt/docker/ceph-status.sh
+
+        [Install]
+        WantedBy=multi-user.target
+    path: /etc/systemd/system/ceph-status.service
 EOF
 
 if [[ $vmi -eq $NUM_DDs ]]; then
@@ -418,7 +454,7 @@ cat <<EOF >> user-data
   - content: |
         [Unit]
         Description=Setup ceph settings
-        After=ceph-mds.target
+        After=ceph-status.service
 
         [Service]
         Type=forking
@@ -436,10 +472,12 @@ runcmd:
   - systemctl enable ceph-mgr.service
   - systemctl enable ceph-osd.service
   - systemctl enable ceph-mds.service
+  - systemctl enable ceph-status.timer
   - systemctl start ceph-mon.service
   - systemctl start ceph-mgr.service
   - systemctl start ceph-osd.service
   - systemctl start ceph-mds.service
+  - systemctl start ceph-status.timer
 EOF
 
 if [[ $vmi -eq $NUM_DDs ]]; then
@@ -451,17 +489,28 @@ fi
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 
-virsh define config/udvm`echo $vmi`.xml
-virsh start udvm`echo $vmi`
-virsh autostart udvm`echo $vmi`
-
-file=/opt/ceph/ceph.tgz
+if [[ $vmi -gt 1 ]]; then
+pvmi=$(($vmi - 1))
+file=/opt/ceph/osd`echo $pvmi`
 while [ ! -f "$file" ]
 do
     inotifywait -qqt 5 -e create -e moved_to "$(dirname $file)"
 #    echo "Ceph files still not ready. Sleep for 5 seconds..."
 #    sleep 5
 done
+fi
+
+virsh define config/udvm`echo $vmi`.xml
+virsh start udvm`echo $vmi`
+virsh autostart udvm`echo $vmi`
+
+#file=/opt/ceph/ceph.tgz
+#while [ ! -f "$file" ]
+#do
+#    inotifywait -qqt 5 -e create -e moved_to "$(dirname $file)"
+##    echo "Ceph files still not ready. Sleep for 5 seconds..."
+##    sleep 5
+#done
 
 done
 
