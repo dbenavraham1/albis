@@ -419,7 +419,7 @@ cat <<EOF >> user-data
         osd=\$(ceph status | grep "osd: " | awk '{print \$2}' | cut -d/ -f1)
         node=\$(cat /etc/hostname | sed -r 's/[^0-9]*//g')
         if [[ \$node -eq \$osd ]]; then
-            touch /opt/ceph/osd`echo \$node`
+            touch /opt/ceph/osd\`echo \$node\`
         fi
         echo "Ceph status started" >> /home/fedora/runcmd.log
     path: /opt/docker/ceph-status.sh
