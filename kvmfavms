@@ -500,6 +500,8 @@ do
 done
 fi
 
+rm /opt/ceph/osd`echo $pvmi`
+
 virsh define config/udvm`echo $vmi`.xml
 virsh start udvm`echo $vmi`
 virsh autostart udvm`echo $vmi`
