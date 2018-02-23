@@ -1,5 +1,7 @@
 #!/bin/bash -x
 
+rm -rf /opt/ceph/*
+
 array=( 1 2 3 4 5 )
 for vmi in "${array[@]}"
 do
@@ -388,7 +390,7 @@ cat <<EOF >> user-data
   - content: |
         #!/bin/bash
         echo "Start ceph docker mds" >> /home/fedora/runcmd.log
-        docker run -d --net=host --name ceph-mds --restart always -v /var/lib/ceph/:/var/lib/ceph/ -v /etc/ceph:/etc/ceph -e CEPHFS_CREATE=1 -e CEPHFS_DATA_POOL_PG=256 -e CEPHFS_METADATA_POOL_PG=256 ceph/daemon mds
+        docker run -d --net=host --name ceph-mds --restart always -v /var/lib/ceph/:/var/lib/ceph/ -v /etc/ceph:/etc/ceph -e CEPHFS_CREATE=1 -e CEPHFS_DATA_POOL_PG=512 -e CEPHFS_METADATA_POOL_PG=512 ceph/daemon mds
         echo "Ceph docker mds started" >> /home/fedora/runcmd.log
     path: /opt/docker/ceph-mds.sh
     permissions: 0755
@@ -495,8 +497,8 @@ fi
 
 genisoimage -output init.iso -volid cidata -joliet -rock user-data meta-data
 
-if [[ $vmi -gt 1 ]]; then
 pvmi=$(($vmi - 1))
+if [[ $vmi -gt 1 ]]; then
 file=/opt/ceph/osd`echo $pvmi`
 while [ ! -f "$file" ]
 do
@@ -506,7 +508,7 @@ do
 done
 fi
 
-rm /opt/ceph/osd`echo $pvmi`
+rm -rf /opt/ceph/osd`echo $pvmi`
 
 virsh define config/udvm`echo $vmi`.xml
 virsh start udvm`echo $vmi`
@@ -523,5 +525,6 @@ virsh autostart udvm`echo $vmi`
 done
 
 rm -rf /mnt/vmlocal/kvm/guests/tmp_udvm
+rm -rf /opt/ceph/osd`echo $vmi`
 
 exit 1
