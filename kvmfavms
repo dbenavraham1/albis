@@ -336,6 +336,9 @@ EOF
 
 if [[ $vmi -eq 1 ]]; then
 cat <<EOF >> user-data
+        docker stop ceph-mon
+        echo "mon max pg per osd = 600" >> /etc/ceph/ceph.conf
+        docker start ceph-mon
         file=/etc/ceph/ceph.mon.keyring
         while [ ! -f "\$file" ]
         do
