@@ -226,7 +226,8 @@ done
 install_base_system(){
   log "INSTALL BASE SYSTEM"
   log "Installing PGP keyring"
-  pacman -Sy archlinux-keyring
+  pacman -S --noconfirm archlinux-keyring
+  pacman -S --noconfirm pacman-contrib
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
   pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf inotify-tools pv wipe jq
