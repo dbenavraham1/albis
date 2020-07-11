@@ -277,10 +277,10 @@ install_base_system(){
 configure_uefi(){
   arch_chroot "bootctl --path=/boot$esp install"
 #  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
-  arch_chroot "echo \"title   Arch Linux" > /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"linux   /vmlinuz-linux" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"initrd  /initramfs-linux.img" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"title   Arch Linux\" > /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"linux   /vmlinuz-linux\" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"initrd  /initramfs-linux.img\" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on\" >> /boot/loader/entries/arch.conf"
 
 }
 #}}}
