@@ -102,37 +102,64 @@ create_partition(){
 #   parted -s /dev/sda rm ${v_partition}
 #done
 wipefs --all --force /dev/sda
+# GPT
 echo "
-p
-o
+g
 n
-p
 1
 
 +512M
 t
-ef
+1
 n
-p
 2
 
 +1G
 t
 2
-82
+19
 n
-p
 3
 
 +35G
 t
 3
-83
-a
-1
+20
 p
 w
 " | fdisk /dev/sda || exit 1
+# DOS
+#echo "
+#p
+#o
+#n
+#p
+#1
+#
+#+512M
+#t
+#ef
+#n
+#p
+#2
+#
+#+1G
+#t
+#2
+#82
+#n
+#p
+#3
+#
+#+35G
+#t
+#3
+#83
+#a
+#1
+#p
+#w
+#" | fdisk /dev/sda || exit 1
 #sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk /dev/sda
 #  p # print existing partitions
 #  o # clear the in memory partition table
@@ -244,6 +271,17 @@ install_base_system(){
     pacstrap ${MOUNTPOINT} alsa-utils espeakup brltty
     arch_chroot "systemctl enable espeakup.service"
   fi
+}
+#}}}
+#CONFIGURE UEFI {{{
+configure_uefi(){
+  arch_chroot "bootctl --path=/boot$esp install"
+#  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
+  arch_chroot "echo \"title   Arch Linux" > /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"linux   /vmlinuz-linux" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"initrd  /initramfs-linux.img" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on" >> /boot/loader/entries/arch.conf"
+
 }
 #}}}
 #CONFIGURE KEYMAP {{{
@@ -406,6 +444,7 @@ configure_timezone
 configure_hardwareclock
 configure_locale
 configure_mkinitcpio
+configure_uefi
 install_bootloader
 root_password
 setup_sshd
