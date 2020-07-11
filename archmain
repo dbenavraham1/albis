@@ -48,6 +48,7 @@ select_keymap(){
 configure_mirrorlist(){
   sed -i 's/^#DNSSEC=no/DNSSEC=no/g' /etc/systemd/resolved.conf
   systemctl restart systemd-resolved.service
+  pacman -Sy --noconfirm archlinux-keyring
   pacman -Sy --noconfirm pacman-contrib
   url="https://www.archlinux.org/mirrorlist/?country=US&use_mirror_status=on"
 
@@ -229,8 +230,8 @@ done
 install_base_system(){
   log "INSTALL BASE SYSTEM"
   log "Installing PGP keyring"
-  pacman -Sy --noconfirm archlinux-keyring
-  pacman -Sy --noconfirm pacman-contrib
+#  pacman -Sy --noconfirm archlinux-keyring
+#  pacman -Sy --noconfirm pacman-contrib
   log "Using the pacstrap script we install the base system. The base-devel package group will be installed also."
   rm -rf ${MOUNTPOINT}${EFI_MOUNTPOINT}/vmlinuz-linux
   pacstrap ${MOUNTPOINT} base base-devel parted btrfs-progs f2fs-tools ntp net-tools openssh git nmap vim qemu-headless libvirt ovmf inotify-tools pv wipe jq
