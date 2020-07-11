@@ -48,6 +48,7 @@ select_keymap(){
 configure_mirrorlist(){
   sed -i 's/^#DNSSEC=no/DNSSEC=no/g' /etc/systemd/resolved.conf
   systemctl restart systemd-resolved.service
+  pacman -Sy --noconfirm pacman-contrib
   url="https://www.archlinux.org/mirrorlist/?country=US&use_mirror_status=on"
 
   tmpfile=$(mktemp --suffix=-mirrorlist)
