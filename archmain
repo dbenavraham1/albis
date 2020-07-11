@@ -275,13 +275,20 @@ install_base_system(){
 #}}}
 #CONFIGURE UEFI {{{
 configure_uefi(){
-  arch_chroot "bootctl --path=/boot$esp install"
-#  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
-  arch_chroot "echo \"title   Arch Linux\" > /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"linux   /vmlinuz-linux\" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"initrd  /initramfs-linux.img\" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on\" >> /boot/loader/entries/arch.conf"
-
+mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
+mount /dev/sda1 ${MOUNTPOINT}/boot 
+arch_chroot "pacman -S grub efibootmgr dosfstools os-prober mtools"
+arch_chroot "mkdir /boot/EFI"
+arch_chroot "grub-install --target=x86_64-efi  --bootloader-id=grub_uefi --recheck"
+arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+umount /dev/sda1
+umount /dev/sda3
+#  arch_chroot "bootctl --path=/boot$esp install"
+##  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
+#  arch_chroot "echo \"title   Arch Linux\" > /boot/loader/entries/arch.conf"
+#  arch_chroot "echo \"linux   /vmlinuz-linux\" >> /boot/loader/entries/arch.conf"
+#  arch_chroot "echo \"initrd  /initramfs-linux.img\" >> /boot/loader/entries/arch.conf"
+#  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on\" >> /boot/loader/entries/arch.conf"
 }
 #}}}
 #CONFIGURE KEYMAP {{{
