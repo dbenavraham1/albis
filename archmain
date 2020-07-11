@@ -445,7 +445,7 @@ configure_hardwareclock
 configure_locale
 configure_mkinitcpio
 configure_uefi
-install_bootloader
+#install_bootloader
 root_password
 setup_sshd
 setup_kvm_options
