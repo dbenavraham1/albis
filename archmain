@@ -101,7 +101,7 @@ create_partition(){
 #do
 #   parted -s /dev/sda rm ${v_partition}
 #done
-#wipefs --all --force /dev/sda
+wipefs --all --force /dev/sda
 echo "
 p
 o
