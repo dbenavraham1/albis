@@ -277,7 +277,7 @@ install_base_system(){
 configure_uefi(){
 #mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
 #mount /dev/sda1 ${MOUNTPOINT}/boot 
-arch_chroot "pacman -S grub efibootmgr dosfstools os-prober mtools"
+arch_chroot "pacman -Sy --noconfirm grub efibootmgr dosfstools os-prober mtools"
 arch_chroot "mkdir /boot/EFI"
 arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi  --bootloader-id=grub_uefi --recheck"
 arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
