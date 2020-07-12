@@ -197,15 +197,19 @@ w
 format_partitions(){
   #umount -Rf /dev/sda3
   mkfs.xfs -f /dev/sda3
-  mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
+#  mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
   #umount -Rf /dev/sda1
   mkfs.fat -F32 /dev/sda1
   mkdir -p ${MOUNTPOINT}/efi
-  mount /dev/sda1 ${MOUNTPOINT}/efi
+#  mount /dev/sda1 ${MOUNTPOINT}/efi
   swapoff /dev/sda2
   mkswap /dev/sda2
-  swapon /dev/sda2
+#  swapon /dev/sda2
   mkdir -p ${MOUNTPOINT}/mnt/vmlocal
+#  mount /dev/sdd1 ${MOUNTPOINT}/mnt/vmlocal -o discard,noatime
+  swapon /dev/sda2
+  mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
+  mount /dev/sda1 ${MOUNTPOINT}/efi
   mount /dev/sdd1 ${MOUNTPOINT}/mnt/vmlocal -o discard,noatime
 }
 #}}}
