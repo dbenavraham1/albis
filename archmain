@@ -289,7 +289,7 @@ configure_uefi(){
 ##umount /dev/sda3
 #  arch_chroot "bootctl --path=/boot$esp install"
   arch_chroot "bootctl --path=/boot install"
-  arch_chroot "echo \"default arch\" > /boot/loader/loader.conf"
+  arch_chroot "echo \"default arch.conf\" > /boot/loader/loader.conf"
   arch_chroot "echo \"timeout 1\" >> /boot/loader/loader.conf"
   arch_chroot "echo \"editor 0\" >> /boot/loader/loader.conf"
 #  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
