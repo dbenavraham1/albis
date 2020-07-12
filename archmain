@@ -289,14 +289,14 @@ configure_uefi(){
 ##umount /dev/sda3
 #  arch_chroot "bootctl --path=/boot$esp install"
   arch_chroot "bootctl --path=/efi install"
-  arch_chroot "echo \"default arch\" > /boot/loader/loader.conf"
-  arch_chroot "echo \"timeout 1\" >> /boot/loader/loader.conf"
-  arch_chroot "echo \"editor 0\" >> /boot/loader/loader.conf"
+  arch_chroot "echo \"default arch\" > /efi/loader/loader.conf"
+  arch_chroot "echo \"timeout 1\" >> /efi/loader/loader.conf"
+  arch_chroot "echo \"editor 0\" >> /efi/loader/loader.conf"
 #  arch_chroot "PARTUUID=$(blkid -s PARTUUID -o value /dev/sda3)"
-  arch_chroot "echo \"title   Arch Linux\" > /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"linux   /vmlinuz-linux\" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"initrd  /initramfs-linux.img\" >> /boot/loader/entries/arch.conf"
-  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on\" >> /boot/loader/entries/arch.conf"
+  arch_chroot "echo \"title   Arch Linux\" > /efi/loader/entries/arch.conf"
+  arch_chroot "echo \"linux   /vmlinuz-linux\" >> /efi/loader/entries/arch.conf"
+  arch_chroot "echo \"initrd  /initramfs-linux.img\" >> /efi/loader/entries/arch.conf"
+  arch_chroot "echo \"options root=/dev/sda3 rw intel_iommu=on\" >> /efi/loader/entries/arch.conf"
 }
 #}}}
 #CONFIGURE KEYMAP {{{
