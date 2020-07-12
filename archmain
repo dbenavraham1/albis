@@ -200,8 +200,8 @@ format_partitions(){
   mount /dev/sda3 ${MOUNTPOINT} -o discard,noatime
   #umount -Rf /dev/sda1
   mkfs.fat -F32 /dev/sda1
-  mkdir -p ${MOUNTPOINT}/boot
-  mount /dev/sda1 ${MOUNTPOINT}/boot
+  mkdir -p ${MOUNTPOINT}/efi
+  mount /dev/sda1 ${MOUNTPOINT}/efi
   swapoff /dev/sda2
   mkswap /dev/sda2
   swapon /dev/sda2
@@ -279,8 +279,8 @@ configure_uefi(){
 #mount /dev/sda1 ${MOUNTPOINT}/boot 
 arch_chroot "pacman -Sy --noconfirm grub efibootmgr dosfstools os-prober mtools"
 #arch_chroot "mkdir /boot/EFI"
-arch_chroot "grub-install --efi-directory=/boot --target=x86_64-efi  --bootloader-id=grub_uefi --recheck"
-arch_chroot "grub-mkconfig -o /boot/grub/grub.cfg"
+arch_chroot "grub-install --efi-directory=/efi --target=x86_64-efi  --bootloader-id=grub_uefi --recheck"
+arch_chroot "grub-mkconfig -o /efi/grub/grub.cfg"
 #umount /dev/sda1
 #umount /dev/sda3
 #  arch_chroot "bootctl --path=/boot$esp install"
