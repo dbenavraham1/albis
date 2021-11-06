@@ -221,7 +221,7 @@ configure_systemd_networkd(){
   arch_chroot "systemctl enable systemd-resolved.service"
   arch_chroot "systemctl start systemd-resolved.service"
   arch_chroot "rm -rf /etc/resolv.conf"
-  arch_chroot "ln -s $/run/systemd/resolve/resolv.conf /etc/resolv.conf"
+  arch_chroot "ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf"
 
 #  arch_chroot "echo \"[Match]\" >> /etc/systemd/network/10-dhcp.network"
 #  arch_chroot "echo \"Name=*\" >> /etc/systemd/network/10-dhcp.network"
